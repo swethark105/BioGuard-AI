@@ -1,4 +1,4 @@
-# ADLC for AI-assisted quality engineering
+﻿# ADLC for AI-assisted quality engineering
 
 This project demonstrates an **AI Development Life Cycle (ADLC)** adapted for QA, not a replacement for software development or a regulatory standard.
 
@@ -11,7 +11,8 @@ This project demonstrates an **AI Development Life Cycle (ADLC)** adapted for QA
 7. **Investigate and improve:** AI may draft failure hypotheses; engineers verify and add regression coverage.
 
 ## Guardrails
-- No patient data, real genomes, confidential Nabsys details or clinical claims.
+- No patient data, real genomes, confidential company information or clinical claims.
 - No LLM decisions for release gates; test results and risk ownership remain deterministic/human.
 - AI output must be reviewed and versioned before inclusion in test suite.
 - Traceability is illustrative evidence, not a validated quality management system.
+
