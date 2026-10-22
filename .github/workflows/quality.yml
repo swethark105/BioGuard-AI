@@ -1,0 +1,29 @@
+﻿name: BioGuard AI Quality Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and run Playwright tests
+        run: docker compose up --build --abort-on-container-exit --exit-code-from qa
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bioguard-quality-reports
+          path: |
+            artifacts/quality-dashboard.html
+            artifacts/quality-summary.json
+            artifacts/results.json
+            artifacts/playwright-report/
+          if-no-files-found: warn

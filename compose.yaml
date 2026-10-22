@@ -1,0 +1,36 @@
+﻿services:
+  app:
+    build: .
+    command: node app/server.js
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./artifacts:/work/artifacts
+    environment:
+      PORT: "3000"
+      INJECT_DEMO_DEFECT: ${INJECT_DEMO_DEFECT:-false}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  qa:
+    build: .
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:3000
+    command: sh -c 'npm test; code=$$?; npm run report; exit $$code'
+    volumes:
+      - ./artifacts:/work/artifacts
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  ollama_models:

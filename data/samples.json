@@ -1,0 +1,5 @@
+[
+ {"sampleId":"SYN-001","fragmentLength":1200,"signalQuality":0.95,"variantCount":2},
+ {"sampleId":"SYN-002","fragmentLength":550,"signalQuality":0.81,"variantCount":0},
+ {"sampleId":"SYN-003","fragmentLength":3000,"signalQuality":0.62,"variantCount":3}
+]

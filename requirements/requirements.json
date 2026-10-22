@@ -1,0 +1,7 @@
+[
+ {"id":"REQ-001","title":"List synthetic samples","risk":"Medium","control":"ISO 9001:2015 8.6 (illustrative)","testIds":["API-001","UI-001"]},
+ {"id":"REQ-002","title":"Reject invalid sample measurements","risk":"High","control":"ISO 9001:2015 8.5.1 (illustrative)","testIds":["API-002","API-003","API-004"]},
+ {"id":"REQ-003","title":"Classify synthetic sample quality consistently","risk":"High","control":"ISO 9001:2015 9.1 (illustrative)","testIds":["API-005","UI-002"]},
+ {"id":"REQ-004","title":"Record analysis events without patient identifiers","risk":"High","control":"ISO 9001:2015 7.5 (illustrative)","testIds":["API-006"]},
+ {"id":"REQ-005","title":"API does not expose fictional patient PII","risk":"High","control":"Privacy-by-design demonstration","testIds":["API-007"]}
+]

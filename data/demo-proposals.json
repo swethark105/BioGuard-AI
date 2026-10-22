@@ -1,0 +1,33 @@
+
+{
+  "model": "demo-fixture",
+  "generatedAt": "2026-10-22T00:00:00.000Z",
+  "reviewRequired": true,
+  "proposals": {
+    "REQ-001": {
+      "scenario": "Retrieve the list of synthetic samples",
+      "expectedOutcome": "The API returns synthetic samples with valid identifiers and expected fields.",
+      "reviewStatus": "PROPOSED"
+    },
+    "REQ-002": {
+      "scenario": "Reject out-of-range fragment lengths",
+      "expectedOutcome": "Fragment lengths of 0 and 100001 are rejected; boundary values 1 and 100000 are accepted when other fields are valid.",
+      "reviewStatus": "PROPOSED"
+    },
+    "REQ-003": {
+      "scenario": "Validate quality classification at the threshold",
+      "expectedOutcome": "Signal quality 0.79 is REVIEW and 0.80 is PASS.",
+      "reviewStatus": "PROPOSED"
+    },
+    "REQ-004": {
+      "scenario": "Verify analysis event audit records",
+      "expectedOutcome": "Each successful analysis creates an audit event with a sample ID, action, result, and timestamp, without patient identifiers.",
+      "reviewStatus": "PROPOSED"
+    },
+    "REQ-005": {
+      "scenario": "Verify API responses do not expose patient PII",
+      "expectedOutcome": "Synthetic sample and audit API responses contain no patient names, birth dates, or patient identifiers.",
+      "reviewStatus": "PROPOSED"
+    }
+  }
+}

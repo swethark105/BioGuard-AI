@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioGuard AI | Test Review</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f7fb;
+      color: #18324d;
+      margin: 0;
+    }
+    header {
+      background: #153451;
+      color: white;
+      padding: 24px 7%;
+    }
+    main {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 12px #dce4ee;
+    }
+    .status {
+      font-weight: bold;
+      color: #9a6700;
+    }
+    .approved { color: #167347; }
+    .rejected { color: #b42318; }
+    .revise { color: #9a6700; }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 70px;
+      padding: 10px;
+      margin: 12px 0;
+    }
+    button {
+      padding: 10px 16px;
+      margin: 4px;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #153451;
+      color: white;
+    }
+    button:hover { background: #28618d; }
+    .notice { color: #167347; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BioGuard AI</h1>
+    <p>AI-Generated Test Scenario Review</p>
+  </header>
+
+  <main>
+    <p>Review AI-generated test scenarios before accepting them into the QA workflow.</p>
+    <p>All data is synthetic. Human approval is required.</p>
+    <div id="scenarios">Loading scenarios...</div>
+  </main>
+
+  <script>
+    async function loadScenarios() {
+      const container = document.getElementById('scenarios');
+
+      try {
+        const [proposalResponse, reviewResponse] = await Promise.all([
+          fetch('/api/ai/proposals'),
+          fetch('/api/ai/reviews')
+        ]);
+
+        if (!proposalResponse.ok || !reviewResponse.ok) {
+          throw new Error('Unable to retrieve review data');
+        }
+
+        const proposalData = await proposalResponse.json();
+        const reviewData = await reviewResponse.json();
+
+        container.replaceChildren();
+
+        for (const [id, proposal] of Object.entries(proposalData.proposals || {})) {
+          const review = reviewData.reviews?.[id];
+          const card = document.createElement('section');
+          card.className = 'card';
+
+          const heading = document.createElement('h2');
+          heading.textContent = id;
+
+          const scenario = document.createElement('p');
+          scenario.textContent = 'Scenario: ' + proposal.scenario;
+
+          const expected = document.createElement('p');
+          expected.textContent = 'Expected outcome: ' + proposal.expectedOutcome;
+
+          const status = document.createElement('p');
+          status.className = 'status';
+          status.textContent = 'Status: ' + (review?.decision || 'PROPOSED');
+
+          if (review?.decision) {
+            status.classList.add(review.decision.toLowerCase());
+          }
+
+          const comment = document.createElement('textarea');
+          comment.placeholder = 'Enter your review comment (required)';
+          comment.setAttribute('aria-label', 'Review comment for ' + id);
+          comment.value = review?.comment || '';
+
+          const message = document.createElement('p');
+          message.setAttribute('role', 'status');
+
+          card.append(heading, scenario, expected, status, comment);
+
+          for (const decision of ['APPROVED', 'REVISE', 'REJECTED']) {
+            const button = document.createElement('button');
+            button.textContent = decision === 'REVISE' ? 'Request Revision' :
+              decision === 'APPROVED' ? 'Approve' : 'Reject';
+
+            button.addEventListener('click', async () => {
+              if (!comment.value.trim()) {
+                message.textContent = 'Please enter a reviewer comment.';
+                return;
+              }
+
+              button.disabled = true;
+              message.textContent = 'Saving review...';
+
+              try {
+                const response = await fetch('/api/ai/reviews', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    requirementId: id,
+                    decision,
+                    comment: comment.value
+                  })
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.error || 'Unable to save review');
+                }
+
+                status.textContent = 'Status: ' + decision;
+                status.className = 'status ' + decision.toLowerCase();
+                message.textContent = 'Review saved successfully.';
+                message.className = 'notice';
+              } catch (error) {
+                message.textContent = error.message;
+              } finally {
+                button.disabled = false;
+              }
+            });
+
+            card.append(button);
+          }
+
+          card.append(message);
+          container.append(card);
+        }
+      } catch (error) {
+        container.textContent = 'Error: ' + error.message;
+      }
+    }
+
+    loadScenarios();
+  </script>
+</body>
+</html>

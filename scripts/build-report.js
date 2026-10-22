@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+const requirements=JSON.parse(fs.readFileSync('requirements/requirements.json','utf8'));
+const report=JSON.parse(fs.readFileSync('artifacts/results.json','utf8'));
+const tests=[];
+function walk(s){for(const spec of s.specs||[]){for(const t of spec.tests||[]){const r=t.results?.at(-1);tests.push({id:(spec.title.match(/^(API|UI)-\d+/)||[])[0],title:spec.title,status:r?.status||"not-run",error:r?.error?.message||null})}}for(const c of s.suites||[])walk(c)}
+for(const s of report.suites||[])walk(s);
+const matrix=requirements.map(r=>({...r,tests:r.testIds.map(id=>tests.find(t=>t.id===id)||{id,status:'not-run'})}));
+const pass=tests.filter(t=>t.status==='passed').length,failed=tests.filter(t=>t.status!=='passed').length;
+const summary={generatedAt:new Date().toISOString(),totals:{tests:tests.length,passed:pass,failed,requirements:requirements.length,covered:matrix.filter(r=>r.tests.every(t=>t.status!=='not-run')).length},matrix};
+fs.mkdirSync('artifacts',{recursive:true});fs.writeFileSync('artifacts/quality-summary.json',JSON.stringify(summary,null,2));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rows=matrix.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.risk)}</td><td>${esc(r.control)}</td><td>${r.tests.map(t=>`${esc(t.id)}: <b>${esc(t.status)}</b>`).join('<br>')}</td></tr>`).join('');
+fs.writeFileSync('artifacts/quality-dashboard.html',`<!doctype html><html><head><meta charset="utf-8"><title>BioGuard Quality Evidence</title><style>body{font:16px system-ui;margin:40px auto;max-width:1100px;color:#21334a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd5e0;padding:12px;text-align:left;vertical-align:top}th{background:#e9f0f8}.kpi{display:inline-block;padding:16px;background:#edf4fa;border-radius:10px;margin:6px}</style></head><body><h1>BioGuard AI — Quality Dashboard</h1><p>Synthetic educational demo; not a regulatory compliance certification.</p><div class="kpi">Tests: <b>${tests.length}</b></div><div class="kpi">Passed: <b>${pass}</b></div><div class="kpi">Failed: <b>${failed}</b></div><div class="kpi">Requirements covered: <b>${summary.totals.covered}/${requirements.length}</b></div><h2>Requirements traceability</h2><table><tr><th>ID</th><th>Requirement</th><th>Risk</th><th>Illustrative control</th><th>Test results</th></tr>${rows}</table><p>Generated ${esc(summary.generatedAt)}. Review failing tests and raw evidence in playwright-report/index.html.</p></body></html>`);
+console.log('Created artifacts/quality-dashboard.html and quality-summary.json');
