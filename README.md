@@ -55,3 +55,10 @@ Note: the `qa` service normally depends on `app`, so Docker starts the app if ne
 ## Before sharing
 
 Run the default command and verify 9 passing tests. Run the defect demonstration and verify that API-002 fails. Take screenshots of the dashboard and Playwright report, then publish the repo to GitHub. Do not claim verified results until you have executed the commands successfully.
+
+## AI Review Dashboard
+
+The interactive dashboard demonstrates human-in-the-loop validation of AI-assisted test proposals. Reviewers can approve, request revisions, or reject scenarios with documented feedback.
+
+![BioGuard AI Review Dashboard](docs/screenshots/ai-review-dashboard.png)
+
