@@ -1,4 +1,4 @@
-﻿# BioGuard AI â€” Synthetic Biotech Sample QA Engineering Showcase
+﻿# BioGuard AI Synthetic Biotech Sample QA Engineering Showcase
 
 Independent portfolio project inspired by the QA challenges of scientific software. Uses invented sample data only, no real genomes or patient information. This is not a diagnostic tool, regulatory certification or validated quality system.
 
