@@ -1,4 +1,4 @@
-# BioGuard AI — Synthetic Biotech Sample QA Engineering Showcase
+﻿# BioGuard AI â€” Synthetic Biotech Sample QA Engineering Showcase
 
 Independent portfolio project inspired by the QA challenges of scientific software. Uses invented sample data only, no real genomes or patient information. This is not a diagnostic tool, regulatory certification or validated quality system.
 
@@ -11,11 +11,11 @@ docker compose up --build --abort-on-container-exit --exit-code-from qa
 Run from the extracted project directory. First run needs internet to download the Playwright Docker image and npm dependencies. No Node.js, Playwright, Postman, Python or Ollama installation is required on the host. Docker may use significant disk space; default tests do not download an LLM.
 
 **View the outputs** after the run:
-- `artifacts/quality-dashboard.html` — summary and requirements-to-tests traceability
-- `artifacts/playwright-report/index.html` — full Playwright HTML report
-- `artifacts/quality-summary.json` — machine-readable evidence
+- `artifacts/quality-dashboard.html` â€” summary and requirements-to-tests traceability
+- `artifacts/playwright-report/index.html` â€” full Playwright HTML report
+- `artifacts/quality-summary.json` â€” machine-readable evidence
 
-Expected clean run: **9 passing tests** covering 5 synthetic requirements. A successful run exits with code 0. If a test fails, the command exits nonzero; the dashboard still gets generated.
+Expected clean run: **12 passing tests** covering 5 synthetic requirements. A successful run exits with code 0. If a test fails, the command exits nonzero; the dashboard still gets generated.
 
 ## Demonstrate a real defect detection
 
@@ -54,11 +54,12 @@ Note: the `qa` service normally depends on `app`, so Docker starts the app if ne
 
 ## Before sharing
 
-Run the default command and verify 9 passing tests. Run the defect demonstration and verify that API-002 fails. Take screenshots of the dashboard and Playwright report, then publish the repo to GitHub. Do not claim verified results until you have executed the commands successfully.
+Run the default command and verify 12 passing tests. Run the defect demonstration and verify that API-002 fails. Take screenshots of the dashboard and Playwright report, then publish the repo to GitHub. Do not claim verified results until you have executed the commands successfully.
 
 ## AI Review Dashboard
 
 The interactive dashboard demonstrates human-in-the-loop validation of AI-assisted test proposals. Reviewers can approve, request revisions, or reject scenarios with documented feedback.
 
 ![BioGuard AI Review Dashboard](docs/screenshots/ai-review-dashboard.png)
+
 
