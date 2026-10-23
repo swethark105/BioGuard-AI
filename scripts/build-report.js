@@ -2,7 +2,7 @@ import fs from 'node:fs';
 const requirements=JSON.parse(fs.readFileSync('requirements/requirements.json','utf8'));
 const report=JSON.parse(fs.readFileSync('artifacts/results.json','utf8'));
 const tests=[];
-function walk(s){for(const spec of s.specs||[]){for(const t of spec.tests||[]){const r=t.results?.at(-1);tests.push({id:(spec.title.match(/^(API|UI)-\d+/)||[])[0],title:spec.title,status:r?.status||"not-run",error:r?.error?.message||null})}}for(const c of s.suites||[])walk(c)}
+function walk(s){for(const spec of s.specs||[]){for(const t of spec.tests||[]){const r=t.results?.at(-1);tests.push({id:(spec.title.match(/^(API|UI|AI)-\d+/)||[])[0],title:spec.title,status:r?.status||"not-run",error:r?.error?.message||null})}}for(const c of s.suites||[])walk(c)}
 for(const s of report.suites||[])walk(s);
 const matrix=requirements.map(r=>({...r,tests:r.testIds.map(id=>tests.find(t=>t.id===id)||{id,status:'not-run'})}));
 const pass=tests.filter(t=>t.status==='passed').length,failed=tests.filter(t=>t.status!=='passed').length;

@@ -3,3 +3,4 @@ artifacts/*
 !artifacts/.gitkeep
 .env
 README.backup.md
+test-results/
