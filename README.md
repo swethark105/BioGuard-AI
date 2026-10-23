@@ -11,9 +11,9 @@ docker compose up --build --abort-on-container-exit --exit-code-from qa
 Run from the extracted project directory. First run needs internet to download the Playwright Docker image and npm dependencies. No Node.js, Playwright, Postman, Python or Ollama installation is required on the host. Docker may use significant disk space; default tests do not download an LLM.
 
 **View the outputs** after the run:
-- `artifacts/quality-dashboard.html` â€” summary and requirements-to-tests traceability
-- `artifacts/playwright-report/index.html` â€” full Playwright HTML report
-- `artifacts/quality-summary.json` â€” machine-readable evidence
+- `artifacts/quality-dashboard.html`summary and requirements-to-tests traceability
+- `artifacts/playwright-report/index.html`full Playwright HTML report
+- `artifacts/quality-summary.json`machine-readable evidence
 
 Expected clean run: **12 passing tests** covering 5 synthetic requirements. A successful run exits with code 0. If a test fails, the command exits nonzero; the dashboard still gets generated.
 
