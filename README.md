@@ -1,65 +1,119 @@
-﻿# BioGuard AI Synthetic Biotech Sample QA Engineering Showcase
+﻿# BioGuard AI
 
-Independent portfolio project inspired by the QA challenges of scientific software. Uses invented sample data only, no real genomes or patient information. This is not a diagnostic tool, regulatory certification or validated quality system.
+**Synthetic Biotech Sample QA Automation & AI-Assisted Testing**
 
-## One-command demo (Docker Desktop required)
+BioGuard AI is an independent QA engineering portfolio project demonstrating how to build an automated testing framework from scratch for a fictional biotech sample application.
+
+It combines Playwright, TypeScript, API testing, requirements traceability, CI/CD, and AI-assisted test scenario review.
+
+All sample data is fictional. The project is not a diagnostic tool or a validated regulatory quality system.
+
+## Key Features
+
+- **UI and API Automation:** Playwright with TypeScript.
+- **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
+- **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
+- **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
+- **CI/CD Integration:** Automated execution using GitHub Actions.
+- **Quality Reporting:** HTML dashboards and Playwright reports.
+- **Docker:** Reproducible test execution without installing Playwright or Node.js on the host.
+
+## Test Execution Results
+
+| Metric | Latest Verified Local Run |
+|---|---|
+| Total Tests | 12 |
+| Passed | 12 |
+| Failed | 0 |
+| Requirements Covered | 5/5 |
+
+Results reflect the local execution on October 22, 2026.
+
+## Quick Start — Run with One Command
+
+**Prerequisite:** Docker Desktop installed and running.
+
+Clone the repository and navigate to the project directory:
+
+```bash
+git clone https://github.com/swethark105/BioGuard-AI.git
+cd BioGuard-AI
+```
+
+Execute the automated test suite:
 
 ```bash
 docker compose up --build --abort-on-container-exit --exit-code-from qa
 ```
 
-Run from the extracted project directory. First run needs internet to download the Playwright Docker image and npm dependencies. No Node.js, Playwright, Postman, Python or Ollama installation is required on the host. Docker may use significant disk space; default tests do not download an LLM.
+The command builds the environment, runs the automated tests, and generates quality reports. The first run requires internet access to download dependencies.
 
-**View the outputs** after the run:
-- `artifacts/quality-dashboard.html`summary and requirements-to-tests traceability
-- `artifacts/playwright-report/index.html`full Playwright HTML report
-- `artifacts/quality-summary.json`machine-readable evidence
+### Generated Reports
 
-Expected clean run: **12 passing tests** covering 5 synthetic requirements. A successful run exits with code 0. If a test fails, the command exits nonzero; the dashboard still gets generated.
+- `artifacts/quality-dashboard.html` — Test execution summary and requirements traceability.
+- `artifacts/playwright-report/index.html` — Detailed Playwright HTML report.
+- `artifacts/quality-summary.json` — Machine-readable test results.
 
-## Demonstrate a real defect detection
+## AI-Assisted Testing
 
-```bash
-INJECT_DEMO_DEFECT=true docker compose up --build --abort-on-container-exit --exit-code-from qa
-```
+BioGuard AI supports optional local AI-generated test scenario proposals using Ollama and `qwen2.5:1.5b`.
 
-This deliberately enables a fictional validation defect: the API accepts a negative fragment length. `API-002` should fail and link to High-risk `REQ-002`. On Windows PowerShell, use `$env:INJECT_DEMO_DEFECT='true'; docker compose up --build --abort-on-container-exit --exit-code-from qa` and then reset with `Remove-Item Env:INJECT_DEMO_DEFECT`.
+AI-generated proposals are not automatically added to the regression suite. They require human review and approval.
 
-## Optional offline-capable local AI
+The core automation framework works without an AI model or paid AI services.
 
-The core test suite is deterministic and **never depends on an LLM**. AI suggestions are explicitly marked as unapproved proposals. If you already have Ollama running locally with model `qwen2.5:1.5b`, run `npm run ai` (requires Node locally). Or use Docker only:
-
-```bash
-docker compose --profile ai up -d ollama
-docker compose exec ollama ollama pull qwen2.5:1.5b
-docker compose run --rm -e OLLAMA_URL=http://ollama:11434 qa node ai/suggest-tests.js
-```
-
-Note: the `qa` service normally depends on `app`, so Docker starts the app if needed. Local AI model download is one-time, requires internet, and can be slow on 8 GB machines. Output: `artifacts/ai-proposals.json`. AI suggestions are never silently promoted to approved tests. The Ollama image is an optional service; it is not part of the default command.
-
-## Project map
-
-- `app/server.js`: synthetic sample UI and API (`GET /api/samples`, `POST /api/analyze`, `GET /api/audit`)
-- `tests/api.spec.ts`: deterministic API validation, negative cases, audit checks
-- `tests/ui.spec.ts`: browser-based UI assertions
-- `requirements/requirements.json`: risk and traceability matrix
-- `scripts/build-report.js`: evidence dashboard generator
-- `ai/suggest-tests.js`: optional local AI scenario proposal client
-- `docs/ADLC.md`: AI-assisted QA lifecycle and governance
-- `docs/QUALITY-AND-REGULATORY-NOTES.md`: scope, limitations and quality framing
-
-## Interview story
-
-"I built a reproducible synthetic biotech sample QA showcase using Playwright for UI and API validation, mapped every test to a risk-ranked requirement, generated evidence automatically, and designed optional local AI test proposals with human approval gates. I also built an opt-in defect demonstration to show how a high-risk data-validation failure is detected and traced."
-
-## Before sharing
-
-Run the default command and verify 12 passing tests. Run the defect demonstration and verify that API-002 fails. Take screenshots of the dashboard and Playwright report, then publish the repo to GitHub. Do not claim verified results until you have executed the commands successfully.
-
-## AI Review Dashboard
+### AI Review Dashboard
 
 The interactive dashboard demonstrates human-in-the-loop validation of AI-assisted test proposals. Reviewers can approve, request revisions, or reject scenarios with documented feedback.
 
 ![BioGuard AI Review Dashboard](docs/screenshots/ai-review-dashboard.png)
 
+To explore the dashboard locally, start the sample application:
 
+```bash
+docker compose up -d --build app
+```
+
+Then visit:
+
+`http://localhost:3000/ai-review`
+
+## Defect Detection Demonstration
+
+The project includes an optional defect-injection feature that deliberately introduces a validation error.
+
+For example, the API incorrectly accepts a negative fragment length. The automated test `API-002` detects this failure and links it to high-risk requirement `REQ-002`.
+
+On Windows PowerShell:
+
+```powershell
+$env:INJECT_DEMO_DEFECT='true'
+docker compose up --build --abort-on-container-exit --exit-code-from qa
+Remove-Item Env:INJECT_DEMO_DEFECT
+```
+
+This demonstrates how automated testing identifies defects and connects them to requirements.
+
+## Project Structure
+
+| Folder / File | Purpose |
+|---|---|
+| `app/` | Synthetic biotech sample application and APIs |
+| `tests/api.spec.ts` | Automated API tests |
+| `tests/ui.spec.ts` | Automated UI tests |
+| `tests/ai-review.spec.ts` | AI review workflow tests |
+| `requirements/requirements.json` | Synthetic requirements and traceability |
+| `ai/suggest-tests.js` | Optional local AI test proposals |
+| `scripts/build-report.js` | Quality dashboard generation |
+| `docs/ADLC.md` | AI-assisted development and QA lifecycle |
+| `.github/workflows/quality.yml` | CI/CD automation |
+
+## Technology Stack
+
+**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Ollama (Optional)**
+
+## Project Objective
+
+BioGuard AI demonstrates a practical approach to designing a QA automation framework from scratch, combining deterministic testing, risk-based coverage, automated quality reporting, and responsible AI-assisted test design.
+
+The project uses synthetic data and is intended for learning, demonstration, and portfolio purposes.
