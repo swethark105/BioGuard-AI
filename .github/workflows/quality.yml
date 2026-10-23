@@ -25,5 +25,6 @@ jobs:
             artifacts/quality-dashboard.html
             artifacts/quality-summary.json
             artifacts/results.json
+            artifacts/junit.xml
             artifacts/playwright-report/
           if-no-files-found: warn

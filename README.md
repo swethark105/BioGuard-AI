@@ -14,7 +14,7 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
 - **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
-- **CI/CD Integration:** Automated execution using GitHub Actions.
+- **CI/CD Integration:** Automated execution using GitHub Actions and Jenkins.
 - **Quality Reporting:** HTML dashboards and Playwright reports.
 - **Docker:** Reproducible test execution without installing Playwright or Node.js on the host.
 
@@ -53,6 +53,7 @@ The command builds the environment, runs the automated tests, and generates qual
 - `artifacts/quality-dashboard.html` — Test execution summary and requirements traceability.
 - `artifacts/playwright-report/index.html` — Detailed Playwright HTML report.
 - `artifacts/quality-summary.json` — Machine-readable test results.
+- `artifacts/junit.xml` — JUnit test results, used by Jenkins.
 
 ## AI-Assisted Testing
 
@@ -108,6 +109,25 @@ Then visit:
 
 Review decisions are saved to `artifacts/ai-reviews.json`. Running the test suite clears this file first, so every run starts from the same state.
 
+## CI/CD Pipelines
+
+The same Docker-based test suite runs in two CI/CD tools:
+
+- **GitHub Actions** (`.github/workflows/quality.yml`) runs automatically on every push and pull request and uploads the quality reports.
+- **Jenkins** (`Jenkinsfile`) runs the suite, shows pass/fail results and trends on each build, and archives the quality dashboard and Playwright report.
+
+### Running in Jenkins
+
+**Requirements:** a Jenkins agent with Docker and Docker Compose v2, plus the Pipeline, Git and JUnit plugins (included in Jenkins' suggested plugins). The HTML Publisher plugin is optional and adds direct links to the reports on each build.
+
+1. In Jenkins, select **New Item**, enter a name such as `BioGuard-AI`, choose **Pipeline** and click **OK**.
+2. Under **Pipeline**, set **Definition** to **Pipeline script from SCM**.
+3. Choose **Git**, enter `https://github.com/swethark105/BioGuard-AI.git` and set the branch to `*/main`.
+4. Leave **Script Path** as `Jenkinsfile` and click **Save**.
+5. Click **Build Now**. After the first build, the button changes to **Build with Parameters**.
+
+To see the defect-detection demo in Jenkins, choose **Build with Parameters** and tick `INJECT_DEMO_DEFECT`. The build fails, and the test results show `API-002` catching the defect.
+
 ## Defect Detection Demonstration
 
 The project includes an optional defect-injection feature that deliberately introduces a validation error.
@@ -143,11 +163,12 @@ This demonstrates how automated testing identifies defects and connects them to 
 | `ai/suggest-tests.js` | Optional local AI test proposals |
 | `scripts/build-report.js` | Quality dashboard generation |
 | `docs/ADLC.md` | AI-assisted development and QA lifecycle |
-| `.github/workflows/quality.yml` | CI/CD automation |
+| `.github/workflows/quality.yml` | GitHub Actions CI/CD pipeline |
+| `Jenkinsfile` | Jenkins CI/CD pipeline |
 
 ## Technology Stack
 
-**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Ollama (Optional)**
+**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Jenkins | Ollama (Optional)**
 
 ## Project Objective
 
