@@ -7,9 +7,24 @@ const reviewsFile = path.resolve('artifacts/ai-reviews.json');
 
 const allowedDecisions = new Set(['APPROVED', 'REVISE', 'REJECTED']);
 
+// Older AI runs saved proposals as a list; the dashboard expects them keyed by
+// requirement ID, so convert lists on the way out.
+function keyedProposals(data) {
+  if (!Array.isArray(data.proposals)) return data;
+
+  const proposals = {};
+  for (const item of data.proposals) {
+    if (!item?.requirementId) continue;
+    let key = item.requirementId;
+    for (let n = 2; Object.hasOwn(proposals, key); n++) key = `${item.requirementId} (${n})`;
+    proposals[key] = item;
+  }
+  return { ...data, proposals };
+}
+
 export function getProposals() {
   if (fs.existsSync(proposalsFile)) {
-    return JSON.parse(fs.readFileSync(proposalsFile, 'utf8'));
+    return keyedProposals(JSON.parse(fs.readFileSync(proposalsFile, 'utf8')));
   }
 
   const demoFile = path.resolve('data/demo-proposals.json');

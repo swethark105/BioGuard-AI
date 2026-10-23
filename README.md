@@ -25,9 +25,9 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 | Total Tests | 12 |
 | Passed | 12 |
 | Failed | 0 |
-| Requirements Covered | 5/5 |
+| Requirements Covered | 6/6 |
 
-Results reflect the local execution on October 22, 2026.
+Results reflect the local execution on October 23, 2026.
 
 ## Quick Start — Run with One Command
 
@@ -60,7 +60,35 @@ BioGuard AI supports optional local AI-generated test scenario proposals using O
 
 AI-generated proposals are not automatically added to the regression suite. They require human review and approval.
 
-The core automation framework works without an AI model or paid AI services.
+The core automation framework works without an AI model or paid AI services. Until you generate your own proposals, the review dashboard shows a built-in set of demo proposals.
+
+### Generate AI Proposals (Optional)
+
+Everything runs in Docker, so you don't need Node.js or Ollama installed on your machine.
+
+1. Start the local Ollama service:
+
+   ```bash
+   docker compose --profile ai up -d ollama
+   ```
+
+2. Download the model (about 1 GB, first time only):
+
+   ```bash
+   docker compose exec ollama ollama pull qwen2.5:1.5b
+   ```
+
+3. Generate test scenario proposals:
+
+   ```bash
+   docker compose --profile ai run --rm --no-deps -e OLLAMA_URL=http://ollama:11434 qa node ai/suggest-tests.js
+   ```
+
+   Proposals are saved to `artifacts/ai-proposals.json` and replace the demo proposals in the dashboard. Generating a new set clears earlier review decisions. Small local models are not always reliable; if no usable proposals come back, run the command again.
+
+4. Review them in the dashboard (see below). To go back to the demo proposals, delete `artifacts/ai-proposals.json`.
+
+To stop Ollama afterwards: `docker compose --profile ai down`.
 
 ### AI Review Dashboard
 
@@ -78,6 +106,8 @@ Then visit:
 
 `http://localhost:3000/ai-review`
 
+Review decisions are saved to `artifacts/ai-reviews.json`. Running the test suite clears this file first, so every run starts from the same state.
+
 ## Defect Detection Demonstration
 
 The project includes an optional defect-injection feature that deliberately introduces a validation error.
@@ -92,6 +122,12 @@ docker compose up --build --abort-on-container-exit --exit-code-from qa
 Remove-Item Env:INJECT_DEMO_DEFECT
 ```
 
+On macOS or Linux:
+
+```bash
+INJECT_DEMO_DEFECT=true docker compose up --build --abort-on-container-exit --exit-code-from qa
+```
+
 This demonstrates how automated testing identifies defects and connects them to requirements.
 
 ## Project Structure
@@ -102,6 +138,7 @@ This demonstrates how automated testing identifies defects and connects them to 
 | `tests/api.spec.ts` | Automated API tests |
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
+| `tests/global-setup.ts` | Resets saved review decisions before each test run |
 | `requirements/requirements.json` | Synthetic requirements and traceability |
 | `ai/suggest-tests.js` | Optional local AI test proposals |
 | `scripts/build-report.js` | Quality dashboard generation |
@@ -117,3 +154,7 @@ This demonstrates how automated testing identifies defects and connects them to 
 BioGuard AI demonstrates a practical approach to designing a QA automation framework from scratch, combining deterministic testing, risk-based coverage, automated quality reporting, and responsible AI-assisted test design.
 
 The project uses synthetic data and is intended for learning, demonstration, and portfolio purposes.
+
+## License
+
+Released under the [MIT License](LICENSE).
