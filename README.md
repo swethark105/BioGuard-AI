@@ -1,5 +1,7 @@
 ﻿# BioGuard AI
 
+[![Quality Pipeline](https://github.com/swethark105/BioGuard-AI/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/swethark105/BioGuard-AI/actions/workflows/quality.yml) [![Latest results](https://img.shields.io/badge/results-daily%20dashboard-blue)](https://swethark105.github.io/BioGuard-AI/)
+
 **Synthetic Biotech Sample QA Automation & AI-Assisted Testing**
 
 BioGuard AI is an independent QA engineering portfolio project demonstrating how to build an automated testing framework from scratch for a fictional biotech sample application.
@@ -116,6 +118,17 @@ The same Docker-based test suite runs in two CI/CD tools:
 - **GitHub Actions** (`.github/workflows/quality.yml`) runs automatically on every push and pull request and uploads the quality reports.
 - **Jenkins** (`Jenkinsfile`) runs the suite, shows pass/fail results and trends on each build, and archives the quality dashboard and Playwright report.
 
+### Daily Runs and Published Results
+
+GitHub Actions runs the full suite every day at 10:17 UTC (early morning in the US), as well as after every merge to `main`. Each of these runs publishes its results to GitHub Pages, including runs where tests fail:
+
+- **Quality dashboard:** https://swethark105.github.io/BioGuard-AI/
+- **Detailed Playwright report:** https://swethark105.github.io/BioGuard-AI/playwright-report/
+
+To run it now, open the **Actions** tab, choose **BioGuard AI Quality Pipeline**, then **Run workflow**. The page always shows the latest run; earlier runs stay available as downloadable artifacts in the Actions tab.
+
+One-time setup: in the repository **Settings → Pages**, set **Source** to **GitHub Actions**.
+
 ### Running in Jenkins
 
 **Requirements:** a Jenkins agent with Docker and Docker Compose v2, plus the Pipeline, Git and JUnit plugins (included in Jenkins' suggested plugins). The HTML Publisher plugin is optional and adds direct links to the reports on each build.
@@ -125,6 +138,8 @@ The same Docker-based test suite runs in two CI/CD tools:
 3. Choose **Git**, enter `https://github.com/swethark105/BioGuard-AI.git` and set the branch to `*/main`.
 4. Leave **Script Path** as `Jenkinsfile` and click **Save**.
 5. Click **Build Now**. After the first build, the button changes to **Build with Parameters**.
+
+The Jenkinsfile also schedules a daily build between 6:00 and 6:59 in the Jenkins server's time zone.
 
 To see the defect-detection demo in Jenkins, choose **Build with Parameters** and tick `INJECT_DEMO_DEFECT`. The build fails, and the test results show `API-002` catching the defect.
 

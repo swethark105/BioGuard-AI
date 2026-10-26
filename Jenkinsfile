@@ -18,6 +18,11 @@ pipeline {
     )
   }
 
+  // Daily build, some time between 6:00 and 6:59 in the Jenkins server's time zone.
+  triggers {
+    cron('H 6 * * *')
+  }
+
   options {
     timeout(time: 20, unit: 'MINUTES')
     buildDiscarder(logRotator(numToKeepStr: '20'))
