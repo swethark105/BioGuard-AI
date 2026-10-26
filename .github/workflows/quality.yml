@@ -3,6 +3,14 @@
 on:
   push:
   pull_request:
+  # Daily run at 10:17 UTC (6:17 AM New York in summer, 5:17 AM in winter).
+  schedule:
+    - cron: '17 10 * * *'
+  # Lets you start a run (and a publish) from the Actions tab at any time.
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   quality-tests:
@@ -28,3 +36,44 @@ jobs:
             artifacts/junit.xml
             artifacts/playwright-report/
           if-no-files-found: warn
+
+      # Results from main (daily, manual or after a merge) are published to
+      # GitHub Pages, including runs where tests failed.
+      - name: Prepare results site
+        if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          mkdir -p site
+          if [ -f artifacts/quality-dashboard.html ]; then
+            cp artifacts/quality-dashboard.html site/index.html
+          else
+            echo '<!doctype html><meta charset="utf-8"><title>BioGuard AI</title><h1>BioGuard AI</h1><p>The latest run did not produce a report. See the GitHub Actions log.</p>' > site/index.html
+          fi
+          for f in quality-summary.json junit.xml; do
+            if [ -f "artifacts/$f" ]; then cp "artifacts/$f" site/; fi
+          done
+          if [ -d artifacts/playwright-report ]; then cp -r artifacts/playwright-report site/; fi
+
+      - name: Upload results site
+        if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publish-results:
+    needs: quality-tests
+    if: always() && needs.quality-tests.result != 'cancelled' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
