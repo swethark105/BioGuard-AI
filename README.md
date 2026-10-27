@@ -16,6 +16,7 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
 - **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
+- **AI Failure Explanations:** Optional local AI suggests a likely cause for each failed test, clearly labelled as unverified.
 - **CI/CD Integration:** Automated execution using GitHub Actions and Jenkins.
 - **Quality Reporting:** HTML dashboards and Playwright reports.
 - **Docker:** Reproducible test execution without installing Playwright or Node.js on the host.
@@ -24,12 +25,12 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 | Metric | Latest Verified Local Run |
 |---|---|
-| Total Tests | 12 |
-| Passed | 12 |
+| Total Tests | 14 |
+| Passed | 14 |
 | Failed | 0 |
-| Requirements Covered | 6/6 |
+| Requirements Covered | 7/7 |
 
-Results reflect the local execution on October 23, 2026.
+Results reflect the local execution on October 27, 2026.
 
 ## Quick Start — Run with One Command
 
@@ -111,6 +112,26 @@ Then visit:
 
 Review decisions are saved to `artifacts/ai-reviews.json`. Running the test suite clears this file first, so every run starts from the same state.
 
+### AI Failure Explanations (Optional)
+
+When tests fail, a local AI model can suggest the likely cause of each failure. It reads the failed test's code, its error message and the linked requirement, and returns a short hypothesis plus one thing to check.
+
+The suggestion is added to the quality dashboard under **Failed tests**, in a yellow box labelled **"AI suggestion — not verified"**. It never changes a test result: pass/fail is always decided by the test assertions, and an engineer must confirm the cause.
+
+1. Run the tests (for example, the defect demonstration below) so there is at least one failure.
+2. Make sure Ollama is running and the model is downloaded (steps 1 and 2 under *Generate AI Proposals*).
+3. Ask the AI to explain the failures and rebuild the dashboard:
+
+   ```bash
+   docker compose --profile ai run --rm --no-deps -e OLLAMA_URL=http://ollama:11434 qa npm run explain
+   ```
+
+4. Open `artifacts/quality-dashboard.html`.
+
+The explanation is saved to `artifacts/ai-failure-analysis.json` and is shown only for the test run it was written for. After a new test run, the dashboard hides the old explanation until you run `npm run explain` again. If every test passed, there is nothing to explain and no AI call is made.
+
+The automated tests `AI-004` and `AI-005` use a fake AI server to check that notes are kept only for tests that really failed, are always marked unverified, and that unusable AI output is rejected without touching the test results.
+
 ## CI/CD Pipelines
 
 The same Docker-based test suite runs in two CI/CD tools:
@@ -165,6 +186,8 @@ INJECT_DEMO_DEFECT=true docker compose up --build --abort-on-container-exit --ex
 
 This demonstrates how automated testing identifies defects and connects them to requirements.
 
+To see the AI suggest a cause for the failure, run `npm run explain` afterwards (see *AI Failure Explanations*).
+
 ## Project Structure
 
 | Folder / File | Purpose |
@@ -173,9 +196,11 @@ This demonstrates how automated testing identifies defects and connects them to 
 | `tests/api.spec.ts` | Automated API tests |
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
+| `tests/ai-failure-analysis.spec.ts` | AI failure explanation tests (fake AI server) |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
 | `requirements/requirements.json` | Synthetic requirements and traceability |
 | `ai/suggest-tests.js` | Optional local AI test proposals |
+| `ai/explain-failures.js` | Optional local AI explanations for failed tests |
 | `scripts/build-report.js` | Quality dashboard generation |
 | `docs/ADLC.md` | AI-assisted development and QA lifecycle |
 | `.github/workflows/quality.yml` | GitHub Actions CI/CD pipeline |

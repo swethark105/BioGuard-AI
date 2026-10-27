@@ -6,5 +6,5 @@ ISO 9001:2015 clause references in requirements.json are **illustrative mappings
 
 The in-memory audit event list is an educational example only: it is not durable, tamper-evident, access-controlled or Part 11 compliant. The sample PII test checks selected field names, not a comprehensive privacy assessment. Requirements traceability maps test IDs to scenarios, not validated regulatory requirements.
 
-Risk-based priorities: REQ-002, REQ-003, REQ-004 and REQ-005 are High; REQ-001 is Medium. Release readiness would require human assessment of any failed High-risk scenario.
+Risk-based priorities: REQ-002, REQ-003, REQ-004, REQ-005 and REQ-006 are High; REQ-001 and REQ-007 are Medium. Release readiness would require human assessment of any failed High-risk scenario.
 
