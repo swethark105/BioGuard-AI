@@ -8,7 +8,7 @@ This project demonstrates an **AI Development Life Cycle (ADLC)** adapted for QA
 4. **Review:** Human QA checks correctness, feasibility, traceability and missing edge cases; approved scenarios become deterministic Playwright tests.
 5. **Execute:** Playwright runs UI and API tests; assertions determine pass/fail, never LLM judgment.
 6. **Capture evidence:** HTML report, traces/screenshots on failures, JSON results and traceability dashboard.
-7. **Investigate and improve:** AI may draft failure hypotheses; engineers verify and add regression coverage.
+7. **Investigate and improve:** AI may draft failure hypotheses (`npm run explain`), shown on the dashboard as unverified; engineers verify the cause and add regression coverage.
 
 ## Guardrails
 - No patient data, real genomes, confidential company information or clinical claims.
