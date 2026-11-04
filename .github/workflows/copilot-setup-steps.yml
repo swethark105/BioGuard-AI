@@ -1,0 +1,37 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    # BioGuard AI has no build step. Start the app so the agents can open it
+    # at http://localhost:3000 (the baseURL in playwright.config.ts).
+    - name: Start BioGuard AI app
+      run: |
+        nohup node app/server.js > app.log 2>&1 &
+        npx --yes wait-on http://localhost:3000/health --timeout 30000
