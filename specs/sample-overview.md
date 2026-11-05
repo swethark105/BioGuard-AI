@@ -12,7 +12,7 @@ Verify the Sample Analysis Overview page's identity, informational copy, table s
 
 #### 1.1. AGT-001 displays all expected sample values and outcomes
 
-**File:** `tests/agents/sample-overview.spec.ts`
+**File:** `tests/agents/agt-001.spec.ts`
 
 **Steps:**
   1. Start from a fresh browser state and run tests/seed.spec.ts to open the Sample Analysis Overview page.
@@ -30,7 +30,7 @@ Verify the Sample Analysis Overview page's identity, informational copy, table s
 
 #### 1.2. AGT-002 classifies SYN-002 as PASS just above the threshold
 
-**File:** `tests/agents/sample-overview.spec.ts`
+**File:** `tests/agents/agt-002.spec.ts`
 
 **Steps:**
   1. Start from a fresh browser state and run tests/seed.spec.ts to open the Sample Analysis Overview page.
@@ -42,7 +42,7 @@ Verify the Sample Analysis Overview page's identity, informational copy, table s
 
 #### 1.3. AGT-003 shows REVIEW for SYN-003 below the threshold
 
-**File:** `tests/agents/sample-overview.spec.ts`
+**File:** `tests/agents/agt-003.spec.ts`
 
 **Steps:**
   1. Start from a fresh browser state and run tests/seed.spec.ts to open the Sample Analysis Overview page.
@@ -54,7 +54,7 @@ Verify the Sample Analysis Overview page's identity, informational copy, table s
 
 #### 1.4. AGT-004 verifies page identity, disclaimer, and read-only structure
 
-**File:** `tests/agents/sample-overview.spec.ts`
+**File:** `tests/agents/agt-004.spec.ts`
 
 **Steps:**
   1. Start from a fresh browser state and run tests/seed.spec.ts to open the Sample Analysis Overview page.
