@@ -12,25 +12,34 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 ## Key Features
 
-- **UI and API Automation:** Playwright with TypeScript.
+- **UI and API Automation:** Playwright with TypeScript, using page objects and custom fixtures.
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
 - **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
 - **AI Failure Explanations:** Optional local AI suggests a likely cause for each failed test, clearly labelled as unverified.
+- **Playwright Test Agents:** Planner, generator and healer agents (GitHub Copilot in VS Code) plan and write tests, which are kept only after human review.
 - **CI/CD Integration:** Automated execution using GitHub Actions and Jenkins.
 - **Quality Reporting:** HTML dashboards and Playwright reports.
 - **Docker:** Reproducible test execution without installing Playwright or Node.js on the host.
 
 ## Test Execution Results
 
-| Metric | Latest Verified Local Run |
+| Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 14 |
-| Passed | 14 |
+| Total Tests | 19 |
+| Passed | 19 |
 | Failed | 0 |
 | Requirements Covered | 7/7 |
 
-Results reflect the local execution on October 27, 2026.
+Results reflect the GitHub Actions run on November 5, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
+
+| Test group | Tests | What they check |
+|---|---|---|
+| API | API-001 to API-007 | Sample data, input validation, audit log, no personal data |
+| UI | UI-001, UI-002 | Sample table and PASS / REVIEW labels |
+| AI workflow | AI-001 to AI-005 | Human review of AI proposals; AI failure notes stay unverified |
+| Agent-written | AGT-001 to AGT-004 | Every sample row, the 0.80 threshold from both sides, page identity and read-only layout |
+| Seed | SEED-001 | Starting point for the Playwright agents |
 
 ## Quick Start — Run with One Command
 
@@ -203,18 +212,28 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
 | `tests/ai-failure-analysis.spec.ts` | AI failure explanation tests (fake AI server) |
+| `tests/agents/` | Tests written by the Playwright agents and reviewed before merging (AGT-001 to AGT-004) |
+| `tests/seed.spec.ts` | Seed test the Playwright agents start from |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
+| `pages/` | Page objects (where things are on each page) |
+| `fixtures/test-options.ts` | Custom Playwright fixtures that hand page objects to tests |
+| `specs/` | Test plans written by the Playwright planner agent |
 | `requirements/requirements.json` | Synthetic requirements and traceability |
 | `ai/suggest-tests.js` | Optional local AI test proposals |
 | `ai/explain-failures.js` | Optional local AI explanations for failed tests |
 | `scripts/build-report.js` | Quality dashboard generation |
 | `docs/ADLC.md` | AI-assisted development and QA lifecycle |
+| `docs/PLAYWRIGHT-AGENTS.md` | How to use the planner, generator and healer agents |
+| `docs/QUALITY-AND-REGULATORY-NOTES.md` | Notes on the illustrative quality and regulatory approach |
+| `.github/agents/`, `.vscode/mcp.json` | Playwright agent definitions and MCP server setup for VS Code |
 | `.github/workflows/quality.yml` | GitHub Actions CI/CD pipeline |
+| `.github/workflows/copilot-setup-steps.yml` | Environment for the Copilot coding agent on GitHub |
+| `tsconfig.json` | TypeScript settings; `npm run typecheck` checks all test code |
 | `Jenkinsfile` | Jenkins CI/CD pipeline |
 
 ## Technology Stack
 
-**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Jenkins | Ollama (Optional)**
+**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
 
 ## Project Objective
 
