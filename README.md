@@ -94,6 +94,12 @@ Everything runs in Docker, so you don't need Node.js or Ollama installed on your
 
 To stop Ollama afterwards: `docker compose --profile ai down`.
 
+### Playwright Test Agents (Planner, Generator, Healer)
+
+The project includes Playwright's test agents for **GitHub Copilot in VS Code**. The planner explores the running app and writes a test plan to `specs/`, the generator turns the plan into tests in `tests/agents/`, and the healer fixes tests that break. Agent-written tests are only kept after human review in a pull request.
+
+Setup and usage: [docs/PLAYWRIGHT-AGENTS.md](docs/PLAYWRIGHT-AGENTS.md)
+
 ### AI Review Dashboard
 
 The interactive dashboard demonstrates human-in-the-loop validation of AI-assisted test proposals. Reviewers can approve, request revisions, or reject scenarios with documented feedback.
