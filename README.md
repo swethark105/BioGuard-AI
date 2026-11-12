@@ -175,7 +175,9 @@ One-time setup: in the repository **Settings → Pages**, set **Source** to **Gi
 4. Leave **Script Path** as `Jenkinsfile` and click **Save**.
 5. Click **Build Now**. After the first build, the button changes to **Build with Parameters**.
 
-The Jenkinsfile also schedules a daily build between 6:00 and 6:59 in the Jenkins server's time zone.
+The Jenkinsfile also schedules a daily build of `main` between 6:00 and 6:59 in the Jenkins server's time zone.
+
+The same Jenkinsfile works as a **Multibranch Pipeline** (each branch is built when it changes; only `main` runs daily) and on **Windows** Jenkins agents, where it uses `bat` instead of `sh`. On Windows, Docker Desktop must be running.
 
 To see the defect-detection demo in Jenkins, choose **Build with Parameters** and tick `INJECT_DEMO_DEFECT`. The build fails, and the test results show `API-002` catching the defect.
 
