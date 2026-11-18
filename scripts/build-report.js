@@ -126,7 +126,7 @@ const style = 'body{font:16px system-ui;margin:40px auto;max-width:1100px;color:
 fs.writeFileSync('artifacts/quality-dashboard.html',
   `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BioGuard Quality Evidence</title><style>${style}</style></head><body>` +
   `<h1>BioGuard AI — Quality Dashboard</h1>` +
-  `<nav><a href="playwright-report/index.html">Detailed Playwright report</a></nav>` +
+  `<nav><a href="playwright-report/index.html">Detailed Playwright report</a><a href="trends.html">Trends across runs</a></nav>` +
   `<p>Synthetic educational demo; not a regulatory compliance certification.</p>` +
   `<p class="status ${allPassed ? 'ok' : 'bad'}">${allPassed ? `All ${tests.length} tests passed${runNote}` : `${failed} of ${tests.length} tests failed${runNote}`}</p>` +
   `<div class="kpi">Tests: <b>${tests.length}</b></div><div class="kpi">Passed: <b>${passed}</b></div><div class="kpi">Failed: <b>${failed}</b></div>` +

@@ -22,7 +22,7 @@
         condition: service_healthy
     environment:
       BASE_URL: http://app:3000
-    command: sh -c 'npm test; code=$$?; npm run report; exit $$code'
+    command: sh -c 'npm test; code=$$?; npm run report; npm run trends; exit $$code'
     volumes:
       - ./artifacts:/work/artifacts
 
