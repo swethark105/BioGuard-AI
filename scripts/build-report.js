@@ -1,22 +1,139 @@
 import fs from 'node:fs';
-const requirements=JSON.parse(fs.readFileSync('requirements/requirements.json','utf8'));
-const report=JSON.parse(fs.readFileSync('artifacts/results.json','utf8'));
-const tests=[];
-function walk(s){for(const spec of s.specs||[]){for(const t of spec.tests||[]){const r=t.results?.at(-1);tests.push({id:(spec.title.match(/^(API|UI|AI|AGT|SEED)-\d+/)||[])[0],title:spec.title,status:r?.status||"not-run",error:r?.error?.message||null})}}for(const c of s.suites||[])walk(c)}
-for(const s of report.suites||[])walk(s);
-const matrix=requirements.map(r=>({...r,tests:r.testIds.map(id=>tests.find(t=>t.id===id)||{id,status:'not-run'})}));
-const pass=tests.filter(t=>t.status==='passed').length,failed=tests.filter(t=>t.status!=='passed').length;
-const summary={generatedAt:new Date().toISOString(),totals:{tests:tests.length,passed:pass,failed,requirements:requirements.length,covered:matrix.filter(r=>r.tests.every(t=>t.status!=='not-run')).length},matrix};
-fs.mkdirSync('artifacts',{recursive:true});fs.writeFileSync('artifacts/quality-summary.json',JSON.stringify(summary,null,2));
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// Failed tests, with the error message and (if available) the optional AI note.
+
+const requirements = JSON.parse(fs.readFileSync('requirements/requirements.json', 'utf8'));
+const report = JSON.parse(fs.readFileSync('artifacts/results.json', 'utf8'));
+
+const BROWSERS = ['chromium', 'firefox', 'webkit'];
+const ID_PATTERN = /^(API|UI|AI|AGT|SEED|PDF)-\d+/;
+
+// One entry per test run. A test that runs in three browsers gives three runs.
+const runs = [];
+function walk(suite) {
+  for (const spec of suite.specs || []) {
+    for (const t of spec.tests || []) {
+      const r = t.results?.at(-1);
+      runs.push({
+        id: (spec.title.match(ID_PATTERN) || [])[0],
+        title: spec.title,
+        project: t.projectName || 'default',
+        status: r?.status || 'not-run',
+        error: r?.error?.message || null
+      });
+    }
+  }
+  for (const child of suite.suites || []) walk(child);
+}
+for (const suite of report.suites || []) walk(suite);
+
+// One entry per test: it passes only if it passed in every place it ran.
+const tests = [];
+for (const run of runs) {
+  const key = run.id || run.title;
+  let test = tests.find(t => (t.id || t.title) === key);
+  if (!test) {
+    test = { id: run.id, title: run.title, status: 'passed', projects: {} };
+    tests.push(test);
+  }
+  test.projects[run.project] = run.status;
+  if (run.status !== 'passed') test.status = run.status === 'skipped' && test.status === 'passed' ? 'skipped' : 'failed';
+}
+
+const matrix = requirements.map(r => ({
+  ...r,
+  tests: r.testIds.map(id => tests.find(t => t.id === id) || { id, status: 'not-run', projects: {} })
+}));
+const passed = tests.filter(t => t.status === 'passed').length;
+const failed = tests.filter(t => t.status !== 'passed').length;
+const failedRuns = runs.filter(r => r.status !== 'passed');
+const browsersUsed = BROWSERS.filter(b => runs.some(r => r.project === b));
+
+const summary = {
+  generatedAt: new Date().toISOString(),
+  startTime: report.stats?.startTime || null,
+  durationMs: Math.round(report.stats?.duration || 0),
+  totals: {
+    tests: tests.length,
+    passed,
+    failed,
+    runs: runs.length,
+    failedRuns: failedRuns.length,
+    browsers: browsersUsed,
+    requirements: requirements.length,
+    covered: matrix.filter(r => r.tests.every(t => t.status !== 'not-run')).length
+  },
+  failedTests: tests.filter(t => t.status !== 'passed').map(t => t.id || t.title),
+  matrix
+};
+fs.mkdirSync('artifacts', { recursive: true });
+fs.writeFileSync('artifacts/quality-summary.json', JSON.stringify(summary, null, 2));
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const stripAnsi = s => String(s || '').replace(/\u001b\[[0-9;]*m/g, '');
+
+// Failed test runs, with the error message and (if available) the optional AI note.
 // The AI note is shown only when it was written for this exact test run.
-const stripAnsi=s=>String(s||'').replace(/\u001b\[[0-9;]*m/g,'');
-let analysis=null;
-try{const a=JSON.parse(fs.readFileSync('artifacts/ai-failure-analysis.json','utf8'));if(a.resultsStartTime&&a.resultsStartTime===report.stats?.startTime)analysis=a;}catch{}
-const failedTests=tests.filter(t=>t.status!=='passed');
-const failureCards=failedTests.map(t=>{const req=requirements.find(r=>r.testIds.includes(t.id));const ai=analysis?.explanations?.[t.id];const err=stripAnsi(t.error||'No error message recorded');return `<div class="fail"><h3>${esc(t.title)}</h3><p>Requirement: ${req?`${esc(req.id)} (${esc(req.risk)} risk) — ${esc(req.title)}`:'not linked'}</p><pre>${esc(err.length>800?err.slice(0,800)+'…':err)}</pre>${ai?`<div class="ai"><p class="ai-label">AI suggestion — not verified</p><p><b>Likely cause:</b> ${esc(ai.likelyCause)}</p>${ai.suggestedCheck?`<p><b>Suggested check:</b> ${esc(ai.suggestedCheck)}</p>`:''}</div>`:''}</div>`}).join('');
-const failureSection=failedTests.length?`<h2>Failed tests</h2>${analysis?`<p class="note">AI notes below were generated by the local model ${esc(analysis.model)} at ${esc(analysis.generatedAt)} (UTC). They are hypotheses only: an engineer must confirm the cause. Pass/fail is decided by the test assertions, never by AI.</p>`:`<p class="note">Optional: run <code>npm run explain</code> to add AI suggestions for the likely cause.</p>`}${failureCards}`:'';
-const rows=matrix.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.risk)}</td><td>${esc(r.control)}</td><td>${r.tests.map(t=>`${esc(t.id)}: <b>${esc(t.status)}</b>`).join('<br>')}</td></tr>`).join('');
-fs.writeFileSync('artifacts/quality-dashboard.html',`<!doctype html><html><head><meta charset="utf-8"><title>BioGuard Quality Evidence</title><style>body{font:16px system-ui;margin:40px auto;max-width:1100px;color:#21334a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd5e0;padding:12px;text-align:left;vertical-align:top}th{background:#e9f0f8}.kpi{display:inline-block;padding:16px;background:#edf4fa;border-radius:10px;margin:6px}.status{font-size:18px;font-weight:600;padding:12px 16px;border-radius:10px}.ok{background:#dff5e8;color:#14532d}.bad{background:#fde2e1;color:#7f1d1d}.fail{border:1px solid #f3c1bf;border-radius:10px;padding:4px 16px 12px;margin:12px 0}.fail h3{margin:12px 0 4px}pre{white-space:pre-wrap;background:#f6f8fa;padding:10px;border-radius:6px;font-size:13px}.ai{background:#fff8e1;border:1px dashed #d9a400;border-radius:8px;padding:2px 12px}.ai-label{font-weight:700;color:#7a5600}.note{color:#4a5b6e}</style></head><body><h1>BioGuard AI — Quality Dashboard</h1><p>Synthetic educational demo; not a regulatory compliance certification.</p><p class="status ${failed===0&&tests.length>0?'ok':'bad'}">${failed===0&&tests.length>0?`All ${tests.length} tests passed`:`${failed} of ${tests.length} tests failed`}</p><div class="kpi">Tests: <b>${tests.length}</b></div><div class="kpi">Passed: <b>${pass}</b></div><div class="kpi">Failed: <b>${failed}</b></div><div class="kpi">Requirements covered: <b>${summary.totals.covered}/${requirements.length}</b></div>${failureSection}<h2>Requirements traceability</h2><table><tr><th>ID</th><th>Requirement</th><th>Risk</th><th>Illustrative control</th><th>Test results</th></tr>${rows}</table><p>Generated ${esc(summary.generatedAt)} (UTC). Review failing tests and raw evidence in the <a href="playwright-report/index.html">detailed Playwright report</a>.</p></body></html>`);
+let analysis = null;
+try {
+  const a = JSON.parse(fs.readFileSync('artifacts/ai-failure-analysis.json', 'utf8'));
+  if (a.resultsStartTime && a.resultsStartTime === report.stats?.startTime) analysis = a;
+} catch {}
+
+const failureCards = failedRuns.map(run => {
+  const req = requirements.find(r => r.testIds.includes(run.id));
+  const ai = analysis?.explanations?.[run.id];
+  const err = stripAnsi(run.error || 'No error message recorded');
+  const where = BROWSERS.includes(run.project) ? ` <span class="where">in ${esc(run.project)}</span>` : '';
+  return `<div class="fail"><h3>${esc(run.title)}${where}</h3>` +
+    `<p>Requirement: ${req ? `${esc(req.id)} (${esc(req.risk)} risk) — ${esc(req.title)}` : 'not linked'}</p>` +
+    `<pre>${esc(err.length > 800 ? err.slice(0, 800) + '…' : err)}</pre>` +
+    (ai ? `<div class="ai"><p class="ai-label">AI suggestion — not verified</p><p><b>Likely cause:</b> ${esc(ai.likelyCause)}</p>${ai.suggestedCheck ? `<p><b>Suggested check:</b> ${esc(ai.suggestedCheck)}</p>` : ''}</div>` : '') +
+    `</div>`;
+}).join('');
+const failureSection = failedRuns.length
+  ? `<h2>Failed tests</h2>${analysis
+      ? `<p class="note">AI notes below were generated by the local model ${esc(analysis.model)} at ${esc(analysis.generatedAt)} (UTC). They are hypotheses only: an engineer must confirm the cause. Pass/fail is decided by the test assertions, never by AI.</p>`
+      : `<p class="note">Optional: run <code>npm run explain</code> to add AI suggestions for the likely cause.</p>`}${failureCards}`
+  : '';
+
+const resultText = t => {
+  const where = BROWSERS.filter(b => t.projects?.[b]);
+  if (t.status === 'passed' && where.length > 1) return `<b>passed</b> in ${where.length} browsers`;
+  if (t.status === 'failed' && where.length > 1) {
+    const bad = where.filter(b => t.projects[b] !== 'passed');
+    return `<b>failed</b> in ${esc(bad.join(', '))}`;
+  }
+  return `<b>${esc(t.status)}</b>`;
+};
+const rows = matrix.map(r =>
+  `<tr><td>${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.risk)}</td><td>${esc(r.control)}</td>` +
+  `<td>${r.tests.map(t => `${esc(t.id)}: ${resultText(t)}`).join('<br>')}</td></tr>`
+).join('');
+
+// Browser coverage: one row per test that ran in a browser engine.
+const cell = s => s === 'passed' ? '<td class="ok-cell">passed</td>' : s ? `<td class="bad-cell">${esc(s)}</td>` : '<td class="na">—</td>';
+const browserTests = tests.filter(t => BROWSERS.some(b => t.projects[b]));
+const browserSection = browsersUsed.length
+  ? `<h2>Browser coverage</h2><p class="note">User-facing pages are tested in ${browsersUsed.length} browser engine${browsersUsed.length > 1 ? 's' : ''}: Chromium (Chrome, Edge), Firefox and WebKit (Safari). API tests run once, without a browser.</p>` +
+    `<table><tr><th>Test</th>${browsersUsed.map(b => `<th>${esc(b)}</th>`).join('')}</tr>` +
+    browserTests.map(t => `<tr><td>${esc(t.title)}</td>${browsersUsed.map(b => cell(t.projects[b])).join('')}</tr>`).join('') +
+    `</table>`
+  : '';
+
+const allPassed = failed === 0 && tests.length > 0;
+const runNote = runs.length > tests.length ? ` (${runs.length} runs across ${browsersUsed.length} browsers)` : '';
+const style = 'body{font:16px system-ui;margin:40px auto;max-width:1100px;color:#21334a;padding:0 16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd5e0;padding:12px;text-align:left;vertical-align:top}th{background:#e9f0f8}.kpi{display:inline-block;padding:16px;background:#edf4fa;border-radius:10px;margin:6px}.status{font-size:18px;font-weight:600;padding:12px 16px;border-radius:10px}.ok{background:#dff5e8;color:#14532d}.bad{background:#fde2e1;color:#7f1d1d}.ok-cell{color:#14532d}.bad-cell{color:#7f1d1d;font-weight:600;background:#fde2e1}.na{color:#8a99aa}.fail{border:1px solid #f3c1bf;border-radius:10px;padding:4px 16px 12px;margin:12px 0}.fail h3{margin:12px 0 4px}.where{font-weight:400;color:#7f1d1d}pre{white-space:pre-wrap;background:#f6f8fa;padding:10px;border-radius:6px;font-size:13px}.ai{background:#fff8e1;border:1px dashed #d9a400;border-radius:8px;padding:2px 12px}.ai-label{font-weight:700;color:#7a5600}.note{color:#4a5b6e}nav a{margin-right:16px}';
+
+fs.writeFileSync('artifacts/quality-dashboard.html',
+  `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BioGuard Quality Evidence</title><style>${style}</style></head><body>` +
+  `<h1>BioGuard AI — Quality Dashboard</h1>` +
+  `<nav><a href="playwright-report/index.html">Detailed Playwright report</a></nav>` +
+  `<p>Synthetic educational demo; not a regulatory compliance certification.</p>` +
+  `<p class="status ${allPassed ? 'ok' : 'bad'}">${allPassed ? `All ${tests.length} tests passed${runNote}` : `${failed} of ${tests.length} tests failed${runNote}`}</p>` +
+  `<div class="kpi">Tests: <b>${tests.length}</b></div><div class="kpi">Passed: <b>${passed}</b></div><div class="kpi">Failed: <b>${failed}</b></div>` +
+  `<div class="kpi">Browsers: <b>${browsersUsed.length || '—'}</b></div><div class="kpi">Requirements covered: <b>${summary.totals.covered}/${requirements.length}</b></div>` +
+  failureSection +
+  `<h2>Requirements traceability</h2><table><tr><th>ID</th><th>Requirement</th><th>Risk</th><th>Illustrative control</th><th>Test results</th></tr>${rows}</table>` +
+  browserSection +
+  `<p>Generated ${esc(summary.generatedAt)} (UTC). Review failing tests and raw evidence in the <a href="playwright-report/index.html">detailed Playwright report</a>.</p>` +
+  `</body></html>`);
 console.log('Created artifacts/quality-dashboard.html and quality-summary.json');
