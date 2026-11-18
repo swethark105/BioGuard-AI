@@ -9,6 +9,7 @@
     environment:
       PORT: "3000"
       INJECT_DEMO_DEFECT: ${INJECT_DEMO_DEFECT:-false}
+      INJECT_REPORT_DEFECT: ${INJECT_REPORT_DEFECT:-false}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 2s
@@ -22,7 +23,7 @@
         condition: service_healthy
     environment:
       BASE_URL: http://app:3000
-    command: sh -c 'npm test; code=$$?; npm run report; exit $$code'
+    command: sh -c 'npm test; code=$$?; npm run report; npm run trends; exit $$code'
     volumes:
       - ./artifacts:/work/artifacts
 

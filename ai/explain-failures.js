@@ -44,10 +44,18 @@ function collectFailures(report) {
       for (const t of spec.tests || []) {
         const r = t.results?.at(-1);
         if (!r || r.status === 'passed' || r.status === 'skipped') continue;
+        const testId = (spec.title.match(/^(API|UI|AI|AGT|SEED|PDF)-\d+/) || [])[0] || spec.title;
+        // The same test can fail in several browsers: explain it once, noting where it failed.
+        const seen = failures.find(f => f.testId === testId);
+        if (seen) {
+          if (t.projectName && !seen.failedIn.includes(t.projectName)) seen.failedIn.push(t.projectName);
+          continue;
+        }
         failures.push({
-          testId: (spec.title.match(/^(API|UI|AI)-\d+/) || [])[0] || spec.title,
+          testId,
           title: spec.title,
           status: r.status,
+          failedIn: t.projectName ? [t.projectName] : [],
           error: clip(stripAnsi(r.error?.message || r.error?.value || 'No error message recorded'), 1500),
           source: testSource(spec.file, spec.line)
         });
@@ -108,6 +116,7 @@ async function main() {
     return {
       testId: f.testId,
       title: f.title,
+      failedIn: f.failedIn.length ? f.failedIn.join(', ') : 'n/a',
       requirement: req ? `${req.id} (${req.risk} risk): ${req.title}` : 'not linked',
       error: f.error,
       testCode: f.source

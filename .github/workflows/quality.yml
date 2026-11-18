@@ -52,6 +52,11 @@ jobs:
             if [ -f "artifacts/$f" ]; then cp "artifacts/$f" site/; fi
           done
           if [ -d artifacts/playwright-report ]; then cp -r artifacts/playwright-report site/; fi
+          # Trends: download the history published by earlier runs, add this
+          # run to it, and publish it again with trends.html.
+          site_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
+          curl -fsSL "$site_url/history.json" -o site/history.json || echo '[]' > site/history.json
+          node scripts/update-history.js --history site/history.json --out site --dashboard index.html
 
       - name: Upload results site
         if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

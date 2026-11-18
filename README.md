@@ -13,33 +13,37 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 ## Key Features
 
 - **UI and API Automation:** Playwright with TypeScript, using page objects and custom fixtures.
+- **Cross-Browser Testing:** User-facing pages tested in Chromium, Firefox and WebKit (Safari).
+- **PDF Report Comparison:** The downloadable QC report is compared with an approved version on every run.
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
 - **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
 - **AI Failure Explanations:** Optional local AI suggests a likely cause for each failed test, clearly labelled as unverified.
 - **Playwright Test Agents:** Planner, generator and healer agents (GitHub Copilot in VS Code) plan and write tests, which are kept only after human review.
 - **CI/CD Integration:** Automated execution using GitHub Actions and Jenkins.
-- **Quality Reporting:** HTML dashboards and Playwright reports.
+- **Quality Reporting:** HTML dashboards, Playwright reports, and a trends page across daily runs.
 - **Docker:** Reproducible test execution without installing Playwright or Node.js on the host.
 
 ## Test Execution Results
 
 | Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 19 |
-| Passed | 19 |
+| Total Tests | 22 |
+| Test runs (all browsers) | 36 |
+| Passed | 22 |
 | Failed | 0 |
-| Requirements Covered | 7/7 |
+| Requirements Covered | 8/8 |
 
-Results reflect the GitHub Actions run on November 5, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
+Results reflect the GitHub Actions run on November 18, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
 
 | Test group | Tests | What they check |
 |---|---|---|
 | API | API-001 to API-007 | Sample data, input validation, audit log, no personal data |
-| UI | UI-001, UI-002 | Sample table and PASS / REVIEW labels |
+| UI | UI-001, UI-002 | Sample table and PASS / REVIEW labels (Chromium, Firefox, WebKit) |
 | AI workflow | AI-001 to AI-005 | Human review of AI proposals; AI failure notes stay unverified |
-| Agent-written | AGT-001 to AGT-004 | Every sample row, the 0.80 threshold from both sides, page identity and read-only layout |
-| Seed | SEED-001 | Starting point for the Playwright agents |
+| Agent-written | AGT-001 to AGT-004 | Every sample row, the 0.80 threshold from both sides, page identity and read-only layout (Chromium, Firefox, WebKit) |
+| Seed | SEED-001 | Starting point for the Playwright agents (Chromium, Firefox, WebKit) |
+| PDF report | PDF-001 to PDF-003 | Downloaded QC report matches the approved version and the API data |
 
 ## Quick Start — Run with One Command
 
@@ -58,7 +62,9 @@ Execute the automated test suite:
 docker compose up --build --abort-on-container-exit --exit-code-from qa
 ```
 
-The command builds the environment, runs the automated tests, and generates quality reports. The first run requires internet access to download dependencies.
+The command builds the environment, runs the automated tests in all three browsers, and generates quality reports. The first run requires internet access to download dependencies.
+
+**Without Docker (for example in VS Code):** run `npm install` and `npx playwright install` once, start the app with `npm start`, then in a second terminal run `npm test` (all browsers) or `npm run test:chromium` (quicker, Chromium only), followed by `npm run report`.
 
 ### Generated Reports
 
@@ -66,6 +72,37 @@ The command builds the environment, runs the automated tests, and generates qual
 - `artifacts/playwright-report/index.html` — Detailed Playwright HTML report.
 - `artifacts/quality-summary.json` — Machine-readable test results.
 - `artifacts/junit.xml` — JUnit test results, used by Jenkins.
+- `artifacts/trends.html` — Results and duration across your local Docker runs (`npm run trends`).
+
+## Cross-Browser Testing
+
+The user-facing sample pages (UI, SEED and AGT tests) run in the three browser engines Playwright supports:
+
+| Project | Engine | Real-world browsers |
+|---|---|---|
+| `chromium` | Chromium | Chrome, Edge |
+| `firefox` | Firefox | Firefox |
+| `webkit` | WebKit | Safari |
+
+API tests run once, without a browser (`api` project). The AI review dashboard and the PDF report tests run once, in Chromium. The quality dashboard combines each test's results across browsers and shows a **Browser coverage** table, so a failure in only one browser is easy to spot.
+
+## PDF Report Comparison
+
+The app's **QC Reports** page (`/reports`) offers a **Download sample QC report (PDF)** link. Three tests check it:
+
+- `PDF-001` downloads the report in the browser and compares its text with the approved version in `tests/__snapshots__/pdf-report.spec.ts/sample-qc-report.txt`. If anything differs, the test fails and shows the changed lines.
+- `PDF-002` checks it is a real one-page PDF with the right file name and title.
+- `PDF-003` checks the report shows the same values as `/api/samples`.
+
+When the report is meant to change, review the difference, then approve the new version with `npx playwright test --update-snapshots` and commit the updated baseline file.
+
+To see the comparison catch a change, start the app with `INJECT_REPORT_DEFECT=true`. It rounds signal quality in the PDF (0.95 becomes 0.9), and `PDF-001` and `PDF-003` fail:
+
+```powershell
+$env:INJECT_REPORT_DEFECT='true'
+docker compose up --build --abort-on-container-exit --exit-code-from qa
+Remove-Item Env:INJECT_REPORT_DEFECT
+```
 
 ## AI-Assisted Testing
 
@@ -160,6 +197,9 @@ GitHub Actions runs the full suite every day at 10:17 UTC (early morning in the 
 
 - **Quality dashboard:** https://swethark105.github.io/BioGuard-AI/
 - **Detailed Playwright report:** https://swethark105.github.io/BioGuard-AI/playwright-report/
+- **Trends across runs:** https://swethark105.github.io/BioGuard-AI/trends.html (a result tile per run, run duration, tests that failed at least once, and links to each run's log)
+
+The trends page builds up over time: each published run downloads the history from the site, adds its own result and publishes it again. It keeps the last 90 runs.
 
 To run it now, open the **Actions** tab, choose **BioGuard AI Quality Pipeline**, then **Run workflow**. The page always shows the latest run; earlier runs stay available as downloadable artifacts in the Actions tab.
 
@@ -209,21 +249,25 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 | Folder / File | Purpose |
 |---|---|
-| `app/` | Synthetic biotech sample application and APIs |
+| `app/` | Synthetic biotech sample application and APIs; `app/qc-report.js` builds the PDF report |
 | `tests/api.spec.ts` | Automated API tests |
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
 | `tests/ai-failure-analysis.spec.ts` | AI failure explanation tests (fake AI server) |
 | `tests/agents/` | Tests written by the Playwright agents and reviewed before merging (AGT-001 to AGT-004) |
 | `tests/seed.spec.ts` | Seed test the Playwright agents start from |
+| `tests/pdf-report.spec.ts` | PDF report tests; the approved report text is in `tests/__snapshots__/` |
+| `tests/helpers/pdf.ts` | Reads a PDF's text for comparison (pdf.js) |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
 | `pages/` | Page objects (where things are on each page) |
 | `fixtures/test-options.ts` | Custom Playwright fixtures that hand page objects to tests |
 | `specs/` | Test plans written by the Playwright planner agent |
 | `requirements/requirements.json` | Synthetic requirements and traceability |
+| `playwright.config.ts` | Test projects: `api`, `chromium`, `firefox`, `webkit` |
 | `ai/suggest-tests.js` | Optional local AI test proposals |
 | `ai/explain-failures.js` | Optional local AI explanations for failed tests |
 | `scripts/build-report.js` | Quality dashboard generation |
+| `scripts/update-history.js` | Run history and trends page |
 | `docs/ADLC.md` | AI-assisted development and QA lifecycle |
 | `docs/PLAYWRIGHT-AGENTS.md` | How to use the planner, generator and healer agents |
 | `docs/QUALITY-AND-REGULATORY-NOTES.md` | Notes on the illustrative quality and regulatory approach |
@@ -235,7 +279,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 ## Technology Stack
 
-**Playwright | TypeScript | JavaScript | Node.js | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
+**Playwright (Chromium, Firefox, WebKit) | TypeScript | JavaScript | Node.js | pdf-lib and pdf.js | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
 
 ## Project Objective
 

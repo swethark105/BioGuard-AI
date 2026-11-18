@@ -1,0 +1,9 @@
+BioGuard AI - Sample QC Report
+Synthetic demo data. Not for medical or diagnostic use.
+Sample ID | Fragment length | Signal quality | QC outcome
+SYN-001 | 1200 | 0.95 | PASS
+SYN-002 | 550 | 0.81 | PASS
+SYN-003 | 3000 | 0.62 | REVIEW
+Summary: 3 samples, 2 PASS, 1 REVIEW
+Rule: signal quality of 0.80 or more is PASS; otherwise REVIEW.
+Page 1 of 1
