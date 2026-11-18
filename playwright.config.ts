@@ -6,12 +6,16 @@ const apiOnly = [/api\.spec\.ts$/, /ai-failure-analysis\.spec\.ts$/];
 // The user-facing pages are checked in all three browser engines.
 const crossBrowser = [/ui\.spec\.ts$/, /seed\.spec\.ts$/, /agents\/.*\.spec\.ts$/];
 
-// The internal AI review dashboard changes saved state, so it runs once, in Chromium.
-const chromiumOnly = [/ai-review\.spec\.ts$/];
+// Run once, in Chromium: the AI review dashboard (it changes saved state) and
+// the PDF report checks (the PDF is the same whichever browser downloads it).
+const chromiumOnly = [/ai-review\.spec\.ts$/, /pdf-report\.spec\.ts$/];
 
 export default defineConfig({
   testDir: './tests',
   globalSetup: './tests/global-setup.ts',
+  // Approved files for toMatchSnapshot (e.g. the PDF report text), one per test file,
+  // shared by every operating system and browser.
+  snapshotPathTemplate: '{testDir}/__snapshots__/{testFileName}/{arg}{ext}',
   fullyParallel: false,
   workers: 1,
   retries: 0,
