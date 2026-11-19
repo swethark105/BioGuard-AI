@@ -1,10 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Tests that only call the API (no browser) run once.
+// Tests that only call the API (no browser) run once. This includes auth-api.spec.ts.
 const apiOnly = [/api\.spec\.ts$/, /ai-failure-analysis\.spec\.ts$/];
 
 // The user-facing pages are checked in all three browser engines.
-const crossBrowser = [/ui\.spec\.ts$/, /seed\.spec\.ts$/, /agents\/.*\.spec\.ts$/];
+const crossBrowser = [/ui\.spec\.ts$/, /seed\.spec\.ts$/, /agents\/.*\.spec\.ts$/, /auth-ui\.spec\.ts$/];
 
 // Run once, in Chromium: the AI review dashboard (it changes saved state) and
 // the PDF report checks (the PDF is the same whichever browser downloads it).
