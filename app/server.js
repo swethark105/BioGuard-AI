@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { getProposals, getReviews, saveReview } from './proposal-review.js';
 import {fileURLToPath} from 'node:url';
 import { buildQcReport } from './qc-report.js';
+import { handleAuth } from './auth.js';
 const samples=JSON.parse(fs.readFileSync(new URL('../data/samples.json',import.meta.url)));
 const audit=[];
 const send=(res,status,obj)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(obj));};
@@ -13,6 +14,8 @@ const reportsHtml=`<!doctype html><html lang="en"><head><meta charset="utf-8"><t
 const server=http.createServer(async(req,res)=>{
  const path=new URL(req.url,'http://localhost').pathname;
  if(req.method==='GET'&&path==='/health')return send(res,200,{ok:true});
+ // Login, lockout and email verification code (see app/auth.js).
+ if(await handleAuth(req,res,path))return;
 if(req.method==='GET'&&path==='/ai-review'){
   const dashboard=fs.readFileSync(new URL('./review-dashboard.html',import.meta.url),'utf8');
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});

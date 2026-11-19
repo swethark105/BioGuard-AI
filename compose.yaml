@@ -1,4 +1,17 @@
 ﻿services:
+  # Fake email inbox: the app sends verification codes here, tests read them
+  # through its API, and you can see them at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports:
+      - "8025:8025"   # inbox in the browser, and its API for tests
+      - "1025:1025"   # SMTP, so `npm start` on your laptop can send to it
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   app:
     build: .
     command: node app/server.js
@@ -10,6 +23,11 @@
       PORT: "3000"
       INJECT_DEMO_DEFECT: ${INJECT_DEMO_DEFECT:-false}
       INJECT_REPORT_DEFECT: ${INJECT_REPORT_DEFECT:-false}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      mailpit:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 2s
@@ -23,6 +41,8 @@
         condition: service_healthy
     environment:
       BASE_URL: http://app:3000
+      MAILPIT_URL: http://mailpit:8025
+      REQUIRE_MAILPIT: "true"
     command: sh -c 'npm test; code=$$?; npm run report; npm run trends; exit $$code'
     volumes:
       - ./artifacts:/work/artifacts

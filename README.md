@@ -14,6 +14,7 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 - **UI and API Automation:** Playwright with TypeScript, using page objects and custom fixtures.
 - **Cross-Browser Testing:** User-facing pages tested in Chromium, Firefox and WebKit (Safari).
+- **Login Lockout with Email Code:** The 6th failed login emails a verification code; tests read it from a fake inbox (Mailpit).
 - **PDF Report Comparison:** The downloadable QC report is compared with an approved version on every run.
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
@@ -28,13 +29,13 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 | Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 22 |
-| Test runs (all browsers) | 36 |
+| Total Tests | 32 |
+| Test runs (all browsers) | 48 |
 | Passed | 22 |
 | Failed | 0 |
-| Requirements Covered | 8/8 |
+| Requirements Covered | 10/10 |
 
-Results reflect the GitHub Actions run on November 18, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
+Results reflect the GitHub Actions run on November 19, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
 
 | Test group | Tests | What they check |
 |---|---|---|
@@ -44,6 +45,8 @@ Results reflect the GitHub Actions run on November 18, 2026. The [daily dashboar
 | Agent-written | AGT-001 to AGT-004 | Every sample row, the 0.80 threshold from both sides, page identity and read-only layout (Chromium, Firefox, WebKit) |
 | Seed | SEED-001 | Starting point for the Playwright agents (Chromium, Firefox, WebKit) |
 | PDF report | PDF-001 to PDF-003 | Downloaded QC report matches the approved version and the API data |
+| Login lockout (API) | AUTH-001, AUTH-002, AUTH-004 to AUTH-010 | Lockout on the 6th failure, emailed code, wrong / expired / reused codes, counter reset, no account enumeration |
+| Login lockout (UI) | AUTH-003 | Full journey: 6 failures, code read from the email, account unlocked (Chromium, Firefox, WebKit) |
 
 ## Quick Start — Run with One Command
 
@@ -64,7 +67,7 @@ docker compose up --build --abort-on-container-exit --exit-code-from qa
 
 The command builds the environment, runs the automated tests in all three browsers, and generates quality reports. The first run requires internet access to download dependencies.
 
-**Without Docker (for example in VS Code):** run `npm install` and `npx playwright install` once, start the app with `npm start`, then in a second terminal run `npm test` (all browsers) or `npm run test:chromium` (quicker, Chromium only), followed by `npm run report`.
+**Without Docker (for example in VS Code):** run `npm install` and `npx playwright install` once, start the fake email inbox with `docker compose up -d mailpit` (the login tests are skipped without it), start the app with `npm start`, then in a second terminal run `npm test` (all browsers) or `npm run test:chromium` (quicker, Chromium only), followed by `npm run report`.
 
 ### Generated Reports
 
@@ -85,6 +88,27 @@ The user-facing sample pages (UI, SEED and AGT tests) run in the three browser e
 | `webkit` | WebKit | Safari |
 
 API tests run once, without a browser (`api` project). The AI review dashboard and the PDF report tests run once, in Chromium. The quality dashboard combines each test's results across browsers and shows a **Browser coverage** table, so a failure in only one browser is easy to spot.
+
+## Login Lockout with Email Verification Code
+
+The app has a login page (`/login`) with an account-lockout feature, built to demonstrate how to test authentication end to end.
+
+| Rule | Detail |
+|---|---|
+| Failed logins 1 to 5 | "Invalid email or password." |
+| 6th failed login | Account locked; a 6-digit code is emailed |
+| While locked | Only a valid code unlocks the account, even with the correct password |
+| Code limits | Expires after 10 minutes, works once, 5 wrong codes cancel it, at most 3 resends |
+| Successful login | Resets the failed-attempt counter to 0 |
+| Unknown email | Same response as a wrong password, so the form never reveals which accounts exist |
+
+![Login page after the 6th failed attempt](docs/screenshots/login-locked.png)
+
+**How the tests read the email:** Docker Compose runs **Mailpit**, a fake email inbox. The app sends codes to it, and tests read them through Mailpit's API (`tests/helpers/mailbox.ts`), waiting for the email instead of using fixed waits. No real email is ever sent.
+
+**How the tests stay independent:** every test creates a brand-new user through a test-support endpoint, so lockout state never carries over between tests. A second test-support endpoint expires a code instantly, so the expiry test takes milliseconds instead of 10 minutes. Both endpoints are switched off when `NODE_ENV=production`.
+
+**Try it yourself:** run `docker compose up -d app`, open http://localhost:3000/login and sign in as `demo@bioguard.test` with a wrong password six times. Then open the inbox at http://localhost:8025 to find the code. The correct password is `Demo#2026`.
 
 ## PDF Report Comparison
 
@@ -249,13 +273,15 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 | Folder / File | Purpose |
 |---|---|
-| `app/` | Synthetic biotech sample application and APIs; `app/qc-report.js` builds the PDF report |
+| `app/` | Synthetic biotech sample application and APIs; `app/qc-report.js` builds the PDF report; `app/auth.js` is the login and lockout feature |
 | `tests/api.spec.ts` | Automated API tests |
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
 | `tests/ai-failure-analysis.spec.ts` | AI failure explanation tests (fake AI server) |
 | `tests/agents/` | Tests written by the Playwright agents and reviewed before merging (AGT-001 to AGT-004) |
 | `tests/seed.spec.ts` | Seed test the Playwright agents start from |
+| `tests/auth-api.spec.ts`, `tests/auth-ui.spec.ts` | Login lockout tests (API rules and the browser journey) |
+| `tests/helpers/mailbox.ts` | Reads verification emails from Mailpit |
 | `tests/pdf-report.spec.ts` | PDF report tests; the approved report text is in `tests/__snapshots__/` |
 | `tests/helpers/pdf.ts` | Reads a PDF's text for comparison (pdf.js) |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
@@ -279,7 +305,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 ## Technology Stack
 
-**Playwright (Chromium, Firefox, WebKit) | TypeScript | JavaScript | Node.js | pdf-lib and pdf.js | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
+**Playwright (Chromium, Firefox, WebKit) | TypeScript | JavaScript | Node.js | pdf-lib and pdf.js | Mailpit | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
 
 ## Project Objective
 
