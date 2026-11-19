@@ -72,8 +72,8 @@ async function issueCode(user) {
 function startSession(res, email) {
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, email);
-  // Lax (the usual setting for session cookies) is sent on same-site navigations in every
-  // browser; WebKit did not send a Strict cookie on the redirect after login.
+  // Lax is the usual setting for session cookies: sent on same-site navigations,
+  // not on requests from other sites.
   res.setHeader('Set-Cookie', `bg_session=${token}; HttpOnly; SameSite=Lax; Path=/`);
 }
 
