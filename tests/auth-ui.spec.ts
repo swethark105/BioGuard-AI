@@ -21,7 +21,15 @@ test('AUTH-003 a locked user unlocks the account with the code from the email', 
 
   await test.step('AND the code from the email unlocks the account', async () => {
     const code = await mailbox.latestCode(testUser.email);
-    await loginPage.enterCode(code);
+    const [verifyResponse] = await Promise.all([
+      page.waitForResponse(r => r.url().endsWith('/api/auth/verify')),
+      loginPage.enterCode(code)
+    ]);
+    // Check each step separately, so a failure says which one broke.
+    expect(verifyResponse.status(), 'the code from the email is accepted').toBe(200);
+    await expect
+      .poll(async () => (await page.context().cookies()).some(c => c.name === 'bg_session'), { message: 'the browser keeps the login session cookie' })
+      .toBe(true);
     await expect(page).toHaveURL(/\/account$/);
     await expect(page.getByText(`Signed in as ${testUser.email}`)).toBeVisible();
   });
