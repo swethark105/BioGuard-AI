@@ -15,6 +15,13 @@
   app:
     build: .
     command: node app/server.js
+    # Tests reach the app by this name. Not "app": .app is a real top-level
+    # domain, and WebKit (Safari) refuses cookies set by a domain ending, so
+    # the login session cookie was never stored in WebKit.
+    hostname: bioguard-app
+    networks:
+      default:
+        aliases: [bioguard-app]
     ports:
       - "3000:3000"
     volumes:
@@ -40,7 +47,7 @@
       app:
         condition: service_healthy
     environment:
-      BASE_URL: http://app:3000
+      BASE_URL: http://bioguard-app:3000
       MAILPIT_URL: http://mailpit:8025
       REQUIRE_MAILPIT: "true"
     command: sh -c 'npm test; code=$$?; npm run report; npm run trends; exit $$code'
