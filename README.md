@@ -159,7 +159,7 @@ To run the login tests without Docker for the app, start only the inbox with `do
 |---|---|
 | http://localhost:8025 does not open | `docker compose up -d mailpit`, then check `docker compose ps` |
 | `/login` shows `Not found` | Old app image: run `git pull`, then `docker compose up -d --build app` |
-| `port is already allocated` | Something else uses port 8025, 1025 or 3000: stop it, or run `docker compose down` |
+| `port is already allocated` | Something else uses port 8025, 1025 or 3000: stop it, or run `docker compose down`. Jenkins builds don't use these ports (`compose.ci.yaml`) |
 | Login tests skipped | Mailpit is not running on your laptop: `docker compose up -d mailpit` |
 
 **Why the app is called `bioguard-app` inside Docker:** the tests first reached the app at `http://app:3000`. `.app` is a real internet domain ending, like `.com`, and WebKit (Safari) refuses cookies set directly by a domain ending, so the login journey failed in WebKit only. Renaming the app's Docker hostname fixed it. It was a test-environment issue, not an app bug.
@@ -328,6 +328,10 @@ The Jenkinsfile also schedules a daily build of `main` between 6:00 and 6:59 in 
 
 The same Jenkinsfile works as a **Multibranch Pipeline** (each branch is built when it changes; only `main` runs daily) and on **Windows** Jenkins agents, where it uses `bat` instead of `sh`. On Windows, Docker Desktop must be running.
 
+**No host ports in Jenkins builds:** Jenkins adds `compose.ci.yaml`, which removes the app's and Mailpit's ports on the host computer (the tests reach them through Docker's own network). So a build never fails with `port is already allocated` when BioGuard is running on the same computer, or when another build runs at the same time. Your own `docker compose up` still opens ports 3000, 8025 and 1025.
+
+**Keep the branch list short:** a Multibranch Pipeline builds every branch on GitHub, and old branches keep their old Jenkinsfile. Delete branches once they are merged (or turn on **Settings → General → Automatically delete head branches** on GitHub), then click **Scan Multibranch Pipeline Now** in Jenkins to remove their jobs.
+
 To see the defect-detection demo in Jenkins, choose **Build with Parameters** and tick `INJECT_DEMO_DEFECT`. The build fails, and the test results show `API-002` catching the defect.
 
 ## Defect Detection Demonstration
@@ -388,6 +392,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `tsconfig.json` | TypeScript settings; `npm run typecheck` checks all test code |
 | `Jenkinsfile` | Jenkins CI/CD pipeline |
 | `compose.yaml` | Docker services: `mailpit`, `app`, `qa`, and the optional `ollama` |
+| `compose.ci.yaml` | Jenkins-only additions: no host ports, so builds never clash |
 
 ## Technology Stack
 
