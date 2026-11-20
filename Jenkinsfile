@@ -55,6 +55,10 @@ pipeline {
           // networks from clashing with other builds on the same agent.
           def branch = env.BRANCH_NAME ?: 'main'
           env.COMPOSE_PROJECT_NAME = "bioguard-${branch}-${env.BUILD_NUMBER}".toLowerCase().replaceAll('[^a-z0-9_-]', '-')
+          // Add compose.ci.yaml, which removes the host ports: builds then never fail
+          // with "port is already allocated" when BioGuard is running on this
+          // computer or another build is running. Windows separates files with ';'.
+          env.COMPOSE_FILE = isUnix() ? 'compose.yaml:compose.ci.yaml' : 'compose.yaml;compose.ci.yaml'
         }
         runCmd 'docker --version'
         runCmd 'docker compose version'

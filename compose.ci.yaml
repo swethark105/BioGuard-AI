@@ -1,0 +1,12 @@
+# Used by Jenkins on top of compose.yaml (see the Jenkinsfile).
+#
+# The tests reach the app and Mailpit through Docker's own network, so a CI
+# build does not need any ports on the host computer. Removing them means a
+# Jenkins build never clashes with BioGuard running on your laptop (port 3000
+# or 8025 already in use), or with another build running at the same time.
+# Your own `docker compose up` still uses compose.yaml alone, with the ports.
+services:
+  app:
+    ports: !reset []
+  mailpit:
+    ports: !reset []
