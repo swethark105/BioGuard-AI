@@ -29,8 +29,8 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 | Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 32 |
-| Test runs (all browsers) | 48 |
+| Total Tests | 33 |
+| Test runs (all browsers) | 49 |
 | Passed | 22 |
 | Failed | 0 |
 | Requirements Covered | 10/10 |
@@ -44,7 +44,7 @@ Results reflect the GitHub Actions run on November 19, 2026. The [daily dashboar
 | AI workflow | AI-001 to AI-005 | Human review of AI proposals; AI failure notes stay unverified |
 | Agent-written | AGT-001 to AGT-004 | Every sample row, the 0.80 threshold from both sides, page identity and read-only layout (Chromium, Firefox, WebKit) |
 | Seed | SEED-001 | Starting point for the Playwright agents (Chromium, Firefox, WebKit) |
-| PDF report | PDF-001 to PDF-003 | Downloaded QC report matches the approved version and the API data |
+| PDF report | PDF-001 to PDF-004 | Downloaded QC report matches the approved text, the API data and the approved page image |
 | Login lockout (API) | AUTH-001, AUTH-002, AUTH-004 to AUTH-010 | Lockout on the 6th failure, emailed code, wrong / expired / reused codes, counter reset, no account enumeration |
 | Login lockout (UI) | AUTH-003 | Full journey: 6 failures, code read from the email, account unlocked (Chromium, Firefox, WebKit) |
 
@@ -166,20 +166,51 @@ To run the login tests without Docker for the app, start only the inbox with `do
 
 ## PDF Report Comparison
 
-The app's **QC Reports** page (`/reports`) offers a **Download sample QC report (PDF)** link. Three tests check it:
+The app's **QC Reports** page (`/reports`) offers a **Download sample QC report (PDF)** link. Four tests check it:
 
 - `PDF-001` downloads the report in the browser and compares its text with the approved version in `tests/__snapshots__/pdf-report.spec.ts/sample-qc-report.txt`. If anything differs, the test fails and shows the changed lines.
 - `PDF-002` checks it is a real one-page PDF with the right file name and title.
 - `PDF-003` checks the report shows the same values as `/api/samples`.
+- `PDF-004` checks the report **looks** right: it draws the page as an image and compares it pixel by pixel with the approved image in `tests/__snapshots__/pdf-report.spec.ts/qc-report-page-1.png`.
 
-When the report is meant to change, review the difference, then approve the new version with `npx playwright test --update-snapshots` and commit the updated baseline file.
+### Visual check (PDF-004)
 
-To see the comparison catch a change, start the app with `INJECT_REPORT_DEFECT=true`. It rounds signal quality in the PDF (0.95 becomes 0.9), and `PDF-001` and `PDF-003` fail:
+The text checks confirm the right words and numbers are in the report, but not where they are on the page. PDF-004 catches layout problems the text cannot show: overlapping or moved columns, missing lines, and wrong sizes or colours.
+
+- **How the page becomes an image:** pdf.js draws the page in Node with the Skia graphics library (`@napi-rs/canvas`), using the fonts bundled with pdf.js, not a browser or system fonts, so the same PDF gives the same image every time (`renderPdfPage` in `tests/helpers/pdf.ts`).
+- **Tolerance:** a normal run differs from the approved image by 0 pixels, and one moved column changes about 1,000. The test allows up to 100 different pixels, so tiny anti-aliasing changes never fail it, while real layout changes always do.
+- **Where it runs:** on Linux, which means Docker Compose, GitHub Actions and Jenkins. On Windows and macOS it is skipped, because those systems draw text very slightly differently from the Linux image it was approved on.
+- **When it fails,** the Playwright report shows three images: expected, actual, and a diff with the changes in red.
+
+![Expected page, page with the layout defect, and the diff in red](docs/screenshots/pdf-visual-diff.png)
+
+*Top: approved image. Middle: the layout defect moves "QC outcome" on top of "Signal quality". Bottom: the diff, with the changes in red and yellow. The text checks still pass here, because the words and their order are unchanged.*
+
+### Approving a change
+
+When the report is meant to change, review the difference, then approve the new version:
+
+- **Text** (`sample-qc-report.txt`): `npx playwright test tests/pdf-report.spec.ts --update-snapshots`
+- **Image** (`qc-report-page-1.png`): approve it on Linux, in Docker, so it matches what CI draws:
+
+  ```powershell
+  docker compose up -d --build app
+  docker compose run --rm -v "${PWD}/tests/__snapshots__:/work/tests/__snapshots__" qa npx playwright test tests/pdf-report.spec.ts --project=chromium --update-snapshots
+  ```
+
+Commit the updated baseline files so the change is reviewed in a pull request.
+
+### See the PDF checks catch a defect
+
+| Start the app with | What goes wrong in the PDF | Tests that fail |
+|---|---|---|
+| `INJECT_REPORT_DEFECT=true` | Signal quality is rounded (0.95 becomes 0.9) | PDF-001, PDF-003 and PDF-004 |
+| `INJECT_REPORT_LAYOUT_DEFECT=true` | "QC outcome" overlaps "Signal quality"; the text is unchanged | **Only PDF-004** |
 
 ```powershell
-$env:INJECT_REPORT_DEFECT='true'
+$env:INJECT_REPORT_LAYOUT_DEFECT='true'
 docker compose up --build --abort-on-container-exit --exit-code-from qa
-Remove-Item Env:INJECT_REPORT_DEFECT
+Remove-Item Env:INJECT_REPORT_LAYOUT_DEFECT
 ```
 
 ## AI-Assisted Testing
@@ -336,8 +367,8 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `tests/seed.spec.ts` | Seed test the Playwright agents start from |
 | `tests/auth-api.spec.ts`, `tests/auth-ui.spec.ts` | Login lockout tests (API rules and the browser journey) |
 | `tests/helpers/mailbox.ts` | Reads verification emails from Mailpit (fake inbox) |
-| `tests/pdf-report.spec.ts` | PDF report tests; the approved report text is in `tests/__snapshots__/` |
-| `tests/helpers/pdf.ts` | Reads a PDF's text for comparison (pdf.js) |
+| `tests/pdf-report.spec.ts` | PDF report tests; the approved report text and page image are in `tests/__snapshots__/` |
+| `tests/helpers/pdf.ts` | Reads a PDF's text and draws its pages as images for comparison (pdf.js) |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
 | `pages/` | Page objects (where things are on each page) |
 | `fixtures/test-options.ts` | Custom Playwright fixtures that hand page objects to tests |

@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from '@napi-rs/canvas';
 
 // pdf.js ships the standard PDF fonts (Helvetica etc.); pointing it at them avoids a warning.
 const require = createRequire(import.meta.url);
@@ -45,4 +46,24 @@ export async function readPdf(bytes: Uint8Array): Promise<PdfContent> {
   const info = meta.info as { Title?: string };
   await doc.destroy();
   return { pageCount: pages.length, title: info.Title ?? '', text: pages.join('\n\n--- page break ---\n\n') + '\n' };
+}
+
+/**
+ * Draws one PDF page as a PNG image, the way a PDF viewer shows it.
+ * Rendering happens in Node (pdf.js + the Skia graphics library) with the
+ * fonts bundled in pdf.js, not in a browser and not with system fonts, so
+ * the same PDF gives the same image on every Linux machine.
+ */
+export async function renderPdfPage(bytes: Uint8Array, pageNumber = 1, scale = 1.5): Promise<Buffer> {
+  const doc = await getDocument({ data: bytes, standardFontDataUrl, useSystemFonts: false, isEvalSupported: false }).promise;
+  const page = await doc.getPage(pageNumber);
+  const viewport = page.getViewport({ scale });
+  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#ffffff'; // PDF pages are white; a canvas starts transparent
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  // pdf.js accepts this canvas in Node; its types expect the browser's canvas
+  await page.render({ canvasContext: context as unknown as CanvasRenderingContext2D, viewport }).promise;
+  await doc.destroy();
+  return canvas.toBuffer('image/png');
 }
