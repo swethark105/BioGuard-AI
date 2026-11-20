@@ -10,11 +10,14 @@ const REPORT_DATE = new Date('2026-01-01T00:00:00Z');
 /**
  * @param {Array<{sampleId:string, fragmentLength:number, signalQuality:number}>} samples
  * @param {(sample:object) => 'PASS'|'REVIEW'} classify the app's QC rule
- * @param {{demoDefect?: boolean}} options demoDefect rounds signal quality to
- *   one decimal place, a deliberate formatting bug for the PDF comparison demo
+ * @param {{demoDefect?: boolean, layoutDefect?: boolean}} options
+ *   demoDefect rounds signal quality to one decimal place (a data bug: the text
+ *   checks catch it); layoutDefect moves the "QC outcome" column on top of
+ *   "Signal quality" (a layout bug: the text stays the same, only the visual
+ *   check PDF-004 catches it)
  * @returns {Promise<Uint8Array>} the PDF file
  */
-export async function buildQcReport(samples, classify, { demoDefect = false } = {}) {
+export async function buildQcReport(samples, classify, { demoDefect = false, layoutDefect = false } = {}) {
   const pdf = await PDFDocument.create({ updateMetadata: false });
   pdf.setTitle('BioGuard AI Sample QC Report');
   pdf.setAuthor('BioGuard AI (synthetic demo)');
@@ -40,7 +43,7 @@ export async function buildQcReport(samples, classify, { demoDefect = false } = 
   y -= 36;
 
   // Table: one row per sample.
-  const columns = [left, 160, 290, 410];
+  const columns = [left, 160, 290, layoutDefect ? 316 : 410];
   ['Sample ID', 'Fragment length', 'Signal quality', 'QC outcome'].forEach((h, i) => text(h, columns[i], 11, bold));
   y -= 8;
   page.drawLine({ start: { x: left, y }, end: { x: 539, y }, thickness: 1, color: quiet });

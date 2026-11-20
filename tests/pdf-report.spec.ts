@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { test, expect } from '../fixtures/test-options';
-import { readPdf } from './helpers/pdf';
+import { readPdf, renderPdfPage } from './helpers/pdf';
 
 const REPORT_URL = '/api/reports/sample-qc.pdf';
 
@@ -55,5 +55,22 @@ test.describe('Sample QC report (PDF)', () => {
     }
     const pass = samples.filter(s => s.qcStatus === 'PASS').length;
     expect(pdf.text).toContain(`Summary: ${samples.length} samples, ${pass} PASS, ${samples.length - pass} REVIEW`);
+  });
+
+  test('PDF-004 QC report page looks the same as the approved image', async ({ request }) => {
+    // The approved image is made on Linux (Docker and CI). Windows and macOS draw
+    // text slightly differently, so there the check is skipped rather than flaky.
+    test.skip(process.platform !== 'linux', 'Visual check runs on Linux: use Docker (docker compose up ...) or CI');
+
+    const bytes = new Uint8Array(await (await request.get(REPORT_URL)).body());
+    const image = await renderPdfPage(bytes, 1);
+
+    // Catches layout problems the text checks cannot see: overlapping or moved
+    // columns, missing lines, wrong sizes or colours. A normal run differs by
+    // 0 pixels; one moved column changes about 1,000. Up to 100 may differ, so
+    // tiny anti-aliasing changes do not fail the test.
+    // Approved image: tests/__snapshots__/pdf-report.spec.ts/qc-report-page-1.png
+    // On failure the report shows expected, actual and a diff with changes in red.
+    expect(image).toMatchSnapshot('qc-report-page-1.png', { maxDiffPixels: 100 });
   });
 });

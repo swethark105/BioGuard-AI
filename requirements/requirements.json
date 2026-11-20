@@ -6,7 +6,7 @@
  {"id":"REQ-005","title":"API does not expose fictional patient PII","risk":"High","control":"Privacy-by-design demonstration","testIds":["API-007"]},
  {"id":"REQ-006","title":"AI-generated test proposals require documented human review","risk":"High","control":"Human-in-the-loop review (illustrative)","testIds":["AI-001","AI-002","AI-003"]},
  {"id":"REQ-007","title":"AI failure explanations are labelled unverified and never change test results","risk":"Medium","control":"Human-in-the-loop review (illustrative)","testIds":["AI-004","AI-005"]},
- {"id":"REQ-008","title":"QC report PDF matches the approved version and the source data","risk":"Medium","control":"ISO 9001:2015 7.5.3 (illustrative)","testIds":["PDF-001","PDF-002","PDF-003"]},
+ {"id":"REQ-008","title":"QC report PDF matches the approved version and the source data","risk":"Medium","control":"ISO 9001:2015 7.5.3 (illustrative)","testIds":["PDF-001","PDF-002","PDF-003","PDF-004"]},
  {"id":"REQ-009","title":"Account locks after 5 failed logins and unlocks only with a valid emailed code","risk":"High","control":"Access control and authentication (illustrative)","testIds":["AUTH-001","AUTH-002","AUTH-003","AUTH-004","AUTH-005","AUTH-006","AUTH-007","AUTH-009","AUTH-010"]},
  {"id":"REQ-010","title":"Login responses do not reveal whether an account exists","risk":"High","control":"Information disclosure prevention (illustrative)","testIds":["AUTH-008"]}
 ]

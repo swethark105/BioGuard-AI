@@ -25,8 +25,8 @@ if(req.method==='GET'&&path==='/ai-review'){
  // QC reports page and the PDF it links to.
  if(req.method==='GET'&&path==='/reports'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(reportsHtml);}
  if(req.method==='GET'&&path==='/api/reports/sample-qc.pdf'){
-  // Intentional report defect is opt-in only: it rounds signal quality in the PDF.
-  const pdf=await buildQcReport(samples,quality,{demoDefect:process.env.INJECT_REPORT_DEFECT==='true'});
+  // Intentional report defects are opt-in only: rounded signal quality, or overlapping columns.
+  const pdf=await buildQcReport(samples,quality,{demoDefect:process.env.INJECT_REPORT_DEFECT==='true',layoutDefect:process.env.INJECT_REPORT_LAYOUT_DEFECT==='true'});
   res.writeHead(200,{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="bioguard-sample-qc-report.pdf"','Cache-Control':'no-store'});
   return res.end(Buffer.from(pdf));
  }
