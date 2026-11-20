@@ -72,7 +72,9 @@ async function issueCode(user) {
 function startSession(res, email) {
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, email);
-  res.setHeader('Set-Cookie', `bg_session=${token}; HttpOnly; SameSite=Strict; Path=/`);
+  // Lax is the usual setting for session cookies: sent on same-site navigations,
+  // not on requests from other sites.
+  res.setHeader('Set-Cookie', `bg_session=${token}; HttpOnly; SameSite=Lax; Path=/`);
 }
 
 function sessionEmail(req) {

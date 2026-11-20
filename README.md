@@ -65,7 +65,7 @@ Execute the automated test suite:
 docker compose up --build --abort-on-container-exit --exit-code-from qa
 ```
 
-The command builds the environment, runs the automated tests in all three browsers, and generates quality reports. The first run requires internet access to download dependencies.
+The command starts three containers: **mailpit** (fake email inbox), **app** (the BioGuard application) and **qa** (Playwright, which runs the tests in all three browsers and generates the quality reports). The first run requires internet access to download dependencies.
 
 **Without Docker (for example in VS Code):** run `npm install` and `npx playwright install` once, start the fake email inbox with `docker compose up -d mailpit` (the login tests are skipped without it), start the app with `npm start`, then in a second terminal run `npm test` (all browsers) or `npm run test:chromium` (quicker, Chromium only), followed by `npm run report`.
 
@@ -104,11 +104,65 @@ The app has a login page (`/login`) with an account-lockout feature, built to de
 
 ![Login page after the 6th failed attempt](docs/screenshots/login-locked.png)
 
-**How the tests read the email:** Docker Compose runs **Mailpit**, a fake email inbox. The app sends codes to it, and tests read them through Mailpit's API (`tests/helpers/mailbox.ts`), waiting for the email instead of using fixed waits. No real email is ever sent.
-
 **How the tests stay independent:** every test creates a brand-new user through a test-support endpoint, so lockout state never carries over between tests. A second test-support endpoint expires a code instantly, so the expiry test takes milliseconds instead of 10 minutes. Both endpoints are switched off when `NODE_ENV=production`.
 
-**Try it yourself:** run `docker compose up -d app`, open http://localhost:3000/login and sign in as `demo@bioguard.test` with a wrong password six times. Then open the inbox at http://localhost:8025 to find the code. The correct password is `Demo#2026`.
+**Try it yourself:**
+
+1. Start the app and the inbox: `docker compose up -d --build app` (Mailpit starts with it).
+2. Open http://localhost:3000/login and sign in as `demo@bioguard.test` with a wrong password six times.
+3. Open the inbox at http://localhost:8025 and copy the code from the newest email.
+4. Enter the code and click **Verify**. The correct password is `Demo#2026`.
+5. Stop everything with `docker compose down`. Users and lockouts are kept in memory, so a restart resets them.
+
+### Mailpit: the fake email inbox
+
+[Mailpit](https://mailpit.axllent.org/) is a free email-testing tool. It accepts email like a real mail server but delivers nothing: every message stays in its inbox, where people can read it in a browser and tests can read it through an API. No real email is ever sent.
+
+```
+6th failed login  →  app sends the code  →  Mailpit keeps the email  →  test reads the code
+                     (SMTP, port 1025)       (inbox, port 8025)         (Mailpit API)
+```
+
+**What was added for it**
+
+| Where | What |
+|---|---|
+| `compose.yaml` | A `mailpit` service (`axllent/mailpit:v1.33.1`) with a health check; the app waits for it to be ready |
+| `compose.yaml` | The app sends to it (`SMTP_HOST: mailpit`, `SMTP_PORT: 1025`); the tests read from it (`MAILPIT_URL`) |
+| `app/mailer.js` | Sends email with [nodemailer](https://nodemailer.com/); defaults to `localhost:1025` outside Docker |
+| `tests/helpers/mailbox.ts` | Reads emails through the Mailpit API: checks it is running, counts emails to an address, and waits for the newest code |
+| `fixtures/test-options.ts` | The `mailbox` fixture hands the helper to tests |
+
+| Port | Used for | Open in a browser |
+|---|---|---|
+| 8025 | Inbox web page and API | http://localhost:8025 |
+| 1025 | Receiving email (SMTP) | — |
+
+**How the tests use it**
+
+- `mailbox.count(email)` proves that **no** email was sent after 5 failed logins (AUTH-001). The app finishes sending before it answers the login, so the count is final.
+- `mailbox.latestCode(email)` checks the inbox repeatedly (up to 15 seconds) until the email arrives, then takes the 6-digit code from it. There are no fixed waits.
+- Each test uses its own new email address, so tests never read each other's emails.
+
+**When Mailpit is not running**
+
+| Where | What happens |
+|---|---|
+| Docker Compose, GitHub Actions, Jenkins | Login tests **fail**, so a broken setup cannot hide (`REQUIRE_MAILPIT=true`) |
+| Your laptop with `npm test` | Login tests are **skipped**, with a message saying how to start Mailpit |
+
+To run the login tests without Docker for the app, start only the inbox with `docker compose up -d mailpit`, then `npm start` and `npm test`.
+
+**Troubleshooting**
+
+| Problem | Fix |
+|---|---|
+| http://localhost:8025 does not open | `docker compose up -d mailpit`, then check `docker compose ps` |
+| `/login` shows `Not found` | Old app image: run `git pull`, then `docker compose up -d --build app` |
+| `port is already allocated` | Something else uses port 8025, 1025 or 3000: stop it, or run `docker compose down` |
+| Login tests skipped | Mailpit is not running on your laptop: `docker compose up -d mailpit` |
+
+**Why the app is called `bioguard-app` inside Docker:** the tests first reached the app at `http://app:3000`. `.app` is a real internet domain ending, like `.com`, and WebKit (Safari) refuses cookies set directly by a domain ending, so the login journey failed in WebKit only. Renaming the app's Docker hostname fixed it. It was a test-environment issue, not an app bug.
 
 ## PDF Report Comparison
 
@@ -273,7 +327,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 | Folder / File | Purpose |
 |---|---|
-| `app/` | Synthetic biotech sample application and APIs; `app/qc-report.js` builds the PDF report; `app/auth.js` is the login and lockout feature |
+| `app/` | Synthetic biotech sample application and APIs; `app/qc-report.js` builds the PDF report; `app/auth.js` is the login and lockout feature; `app/mailer.js` sends email |
 | `tests/api.spec.ts` | Automated API tests |
 | `tests/ui.spec.ts` | Automated UI tests |
 | `tests/ai-review.spec.ts` | AI review workflow tests |
@@ -281,7 +335,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `tests/agents/` | Tests written by the Playwright agents and reviewed before merging (AGT-001 to AGT-004) |
 | `tests/seed.spec.ts` | Seed test the Playwright agents start from |
 | `tests/auth-api.spec.ts`, `tests/auth-ui.spec.ts` | Login lockout tests (API rules and the browser journey) |
-| `tests/helpers/mailbox.ts` | Reads verification emails from Mailpit |
+| `tests/helpers/mailbox.ts` | Reads verification emails from Mailpit (fake inbox) |
 | `tests/pdf-report.spec.ts` | PDF report tests; the approved report text is in `tests/__snapshots__/` |
 | `tests/helpers/pdf.ts` | Reads a PDF's text for comparison (pdf.js) |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
@@ -302,6 +356,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `.github/workflows/copilot-setup-steps.yml` | Environment for the Copilot coding agent on GitHub |
 | `tsconfig.json` | TypeScript settings; `npm run typecheck` checks all test code |
 | `Jenkinsfile` | Jenkins CI/CD pipeline |
+| `compose.yaml` | Docker services: `mailpit`, `app`, `qa`, and the optional `ollama` |
 
 ## Technology Stack
 
