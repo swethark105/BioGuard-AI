@@ -4,15 +4,20 @@ import { type Locator, type Page } from '@playwright/test';
 export class VoicePage {
   readonly questionInput: Locator;
   readonly askButton: Locator;
+  readonly listenButton: Locator;
   readonly micButton: Locator;
-  readonly micNote: Locator;
+  readonly stopButton: Locator;
+    readonly micNote: Locator;
   readonly answer: Locator;
   readonly readmeLink: Locator;
 
   constructor(private readonly page: Page) {
     this.questionInput = page.getByLabel('Your question');
     this.askButton = page.getByRole('button', { name: 'Ask', exact: true });
+    this.listenButton = page.getByRole('button', { name: /Listen/ });
+    this.listenButton = page.getByRole('button', { name: /Listen to the intro/ });
     this.micButton = page.getByRole('button', { name: /Speak/ });
+    this.stopButton = page.getByRole('button', { name: /Stop/ });    this.stopButton = page.getByRole('button', { name: /Stop/ });
     this.micNote = page.getByText('Voice input works in Chrome and Edge');
     this.answer = page.getByRole('status');
     this.readmeLink = page.getByRole('link', { name: 'Read the full README' });

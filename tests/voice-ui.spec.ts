@@ -65,3 +65,69 @@ test('VOICE-008 the mic button shows only where the browser supports speech inpu
     await expect(voicePage.micNote).toBeVisible();
   }
 });
+test('VOICE-009 a pause while speaking does not cut the question short', async ({ voicePage, page }) => {
+  // A fake microphone: the test decides what it "hears" and when.
+  await page.addInitScript(() => {
+    class FakeRecognition {
+      onresult: ((event: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      constructor() { (window as any).fakeMic = this; }
+      start() {}
+      stop() { this.onend?.(); }
+      hear(...parts: string[]) { this.onresult?.({ results: parts.map(transcript => [{ transcript }]) }); }
+    }
+    (window as any).SpeechRecognition = FakeRecognition;
+  });
+  await voicePage.open();
+
+  await test.step('WHEN the user clicks Speak, says "Which", and pauses', async () => {
+    await voicePage.micButton.click();
+    await page.evaluate(() => (window as any).fakeMic.hear('Which'));
+  });
+
+  await test.step('THEN it keeps listening and does not answer yet', async () => {
+    await expect(voicePage.stopButton).toBeVisible();
+    await expect(voicePage.questionInput).toHaveValue('Which');
+    await expect(voicePage.answer).toBeHidden();
+  });
+
+  await test.step('WHEN the user finishes the question and clicks Stop', async () => {
+    await page.evaluate(() => (window as any).fakeMic.hear('Which', 'browsers do you test'));
+    await voicePage.stopButton.click();
+  });
+
+  await test.step('THEN the whole question is answered', async () => {
+    await expect(voicePage.questionInput).toHaveValue('Which browsers do you test');
+    await expect(voicePage.answer).toContainText('three browser engines');
+    await expect(voicePage.micButton).toBeVisible();
+  });
+});
+
+test('VOICE-010 Listen reads the project intro aloud', async ({ voicePage, page }) => {
+  await voicePage.open();
+
+  await voicePage.listenButton.click();
+
+  const spoken: string[] = await page.evaluate(() => (window as any).spoken);
+  expect(spoken).toHaveLength(1);
+  expect(spoken[0]).toContain('welcome to BioGuard AI');
+  expect(spoken[0]).toContain('a person always makes the final call');
+});
+
+test('VOICE-011 the page still answers with no server, as on GitHub Pages', async ({ voicePage, page }) => {
+  // GitHub Pages has no /api, so every API call gets "404 Not Found".
+  await page.route('**/api/voice/**', route => route.fulfill({ status: 404, body: 'Not Found' }));
+  await voicePage.open();
+
+  await test.step('a known question is answered from voice-answers.json', async () => {
+    await voicePage.ask('Which browsers do you test?');
+    await expect(voicePage.answer).toContainText('three browser engines');
+    await expect(voicePage.readmeLink).toBeHidden();
+  });
+
+  await test.step('an unknown question still points to the README', async () => {
+    await voicePage.ask('What is the weather today?');
+    await expect(voicePage.answer).toHaveText("I don't know that yet. The README has the full details.");
+    await expect(voicePage.readmeLink).toBeVisible();
+  });
+});

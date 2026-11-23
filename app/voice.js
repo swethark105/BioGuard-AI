@@ -1,10 +1,13 @@
 // Voice Q&A: visitors ask about the project by voice or by typing.
+// The page itself is public/voice.html; it is also published on GitHub Pages.
 // The browser turns speech into text and reads the answer aloud (Web Speech API).
 // Answers come only from voice-answers.json, so nothing is made up and there is no AI cost.
 
 import fs from 'node:fs';
 
-const ANSWERS = JSON.parse(fs.readFileSync(new URL('./voice-answers.json', import.meta.url), 'utf8'));
+const ANSWERS_FILE = new URL('./voice-answers.json', import.meta.url);
+const PAGE_FILE = new URL('../public/voice.html', import.meta.url);
+const ANSWERS = JSON.parse(fs.readFileSync(ANSWERS_FILE, 'utf8'));
 const README_URL = 'https://github.com/swethark105/BioGuard-AI#readme';
 const NO_ANSWER = "I don't know that yet. The README has the full details.";
 
@@ -39,7 +42,14 @@ function send(res, status, body) {
 export async function handleVoice(req, res, path) {
   if (req.method === 'GET' && path === '/voice') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(VOICE_PAGE);
+    res.end(fs.readFileSync(PAGE_FILE));
+    return true;
+  }
+
+  // The page reads this file itself when there is no server (GitHub Pages).
+  if (req.method === 'GET' && path === '/voice-answers.json') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(fs.readFileSync(ANSWERS_FILE));
     return true;
   }
 
@@ -75,77 +85,3 @@ export async function handleVoice(req, res, path) {
 
   return false;
 }
-
-// ---------- Part 3: the voice page ----------
-
-const VOICE_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>BioGuard AI | Ask about this project</title>
-<style>body{font:16px system-ui;background:#f3f7fb;color:#182a40;margin:0}header{background:#153451;color:white;padding:25px 7%}main{max-width:750px;margin:30px auto;background:white;border-radius:16px;padding:28px;box-shadow:0 4px 24px #d9e2ee}label{display:block;font-weight:600;margin-bottom:6px}input{width:100%;box-sizing:border-box;padding:10px;font:inherit;border:1px solid #b8c6d6;border-radius:8px}button{margin:12px 8px 0 0;background:#153451;color:white;border:0;border-radius:8px;padding:11px 18px;font:inherit}#answer{margin-top:20px;padding:14px;border-radius:8px;background:#edf4fa}.note{color:#4a5b6e}[hidden]{display:none}</style></head>
-<body><header><h1>BioGuard AI</h1><div>Ask about this project</div></header>
-<main>
-  <h2>Ask a question</h2>
-  <p class="note">Try: "Which browsers do you test?" or "How does the login lockout work?"</p>
-  <form id="ask-form">
-    <label for="question">Your question</label>
-    <input id="question" autocomplete="off">
-    <button type="submit">Ask</button>
-    <button type="button" id="mic">🎤 Speak</button>
-  </form>
-  <p id="mic-note" class="note" hidden>Voice input works in Chrome and Edge. In this browser, type your question instead.</p>
-  <p id="answer" role="status" hidden></p>
-  <p id="readme" hidden><a href="${README_URL}">Read the full README</a></p>
-</main>
-<script>
-  const form = document.querySelector('#ask-form');
-  const input = document.querySelector('#question');
-  const mic = document.querySelector('#mic');
-  const answerBox = document.querySelector('#answer');
-  const readme = document.querySelector('#readme');
-
-  // Read the answer aloud, using a female voice when the computer has one.
-  const PREFERRED_VOICES = ['Microsoft Zira', 'Microsoft Aria', 'Google UK English Female', 'Samantha'];
-  function speak(text) {
-    if (!('speechSynthesis' in window)) return;
-    const voices = speechSynthesis.getVoices();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = voices.find(v => PREFERRED_VOICES.some(name => v.name.includes(name))) || null;
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-  }
-
-  async function ask(question) {
-    const response = await fetch('/api/voice/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question })
-    });
-    const data = await response.json();
-    const text = data.answer || data.error;
-    answerBox.textContent = text;
-    answerBox.hidden = false;
-    readme.hidden = data.matched !== false;
-    speak(text);
-  }
-
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    ask(input.value);
-  });
-
-  // Speech to text. Chrome and Edge support it; Firefox does not, so we show a note.
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) {
-    mic.hidden = true;
-    document.querySelector('#mic-note').hidden = false;
-  } else {
-    mic.addEventListener('click', () => {
-      const recognition = new Recognition();
-      recognition.lang = 'en-US';
-      recognition.onresult = event => {
-        input.value = event.results[0][0].transcript;
-        ask(input.value);
-      };
-      recognition.start();
-    });
-  }
-</script>
-</body></html>`;

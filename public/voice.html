@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BioGuard AI | Listen and ask</title>
+<style>
+  body { font: 16px system-ui; background: #f3f7fb; color: #182a40; margin: 0; }
+  header { background: #153451; color: white; padding: 25px 7%; }
+  main { max-width: 750px; margin: 30px auto; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px #d9e2ee; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #b8c6d6; border-radius: 8px; }
+  button { margin: 12px 8px 0 0; background: #153451; color: white; border: 0; border-radius: 8px; padding: 11px 18px; font: inherit; cursor: pointer; }
+  #answer { margin-top: 20px; padding: 14px; border-radius: 8px; background: #edf4fa; }
+  .note { color: #4a5b6e; }
+  [hidden] { display: none; }
+  @media (max-width: 800px) { main { margin: 16px; padding: 18px; } }
+</style>
+</head>
+<body>
+<header><h1>BioGuard AI</h1><div>Listen to a short intro, or ask about this project</div></header>
+<main>
+  <h2>Listen</h2>
+  <p class="note">A one-minute summary of the project, read aloud by your browser.</p>
+  <button type="button" id="listen">▶ Listen to the intro</button>
+
+  <h2>Ask a question</h2>
+  <p class="note">Try: "Which browsers do you test?" or "How does the login lockout work?"<br>
+    To ask by voice: click 🎤 Speak, ask your question, then click ⏹ Stop.</p>
+  <form id="ask-form">
+    <label for="question">Your question</label>
+    <input id="question" autocomplete="off">
+    <button type="submit">Ask</button>
+    <button type="button" id="mic">🎤 Speak</button>
+  </form>
+  <p id="mic-note" class="note" hidden>Voice input works in Chrome and Edge. In this browser, type your question instead.</p>
+  <p id="answer" role="status" hidden></p>
+  <p id="readme" hidden><a href="https://github.com/swethark105/BioGuard-AI#readme">Read the full README</a></p>
+</main>
+<script>
+  // This page works in two places:
+  //   - in the app (npm start), where it asks the server's /api/voice/ask
+  //   - on GitHub Pages, where there is no server, so it finds the answer itself
+  //     in voice-answers.json, using the same rule as the server.
+
+  const INTRO = "Hi, and welcome to BioGuard AI, Swetha's QA automation portfolio project. " +
+    "It tests a fictional lab app that scores samples as PASS or REVIEW. " +
+    "The framework is built from scratch with Playwright and TypeScript: over fifty tests for the user interface and the API, run in Chrome, Firefox and Safari's engine. " +
+    "The tests cover real risks: a login that locks after six wrong passwords and emails a code, a PDF report compared with an approved version, uploaded data files checked for bad values, and this voice page. " +
+    "Every test is linked to a requirement with a risk level. GitHub Actions runs everything daily and publishes a dashboard, and Jenkins and Docker run it too. " +
+    "Bugs are planted on purpose to prove the tests catch them, and the tests found a real cookie bug in Safari. " +
+    "AI suggests tests and explains failures, but a person always makes the final call. " +
+    "Ask me a question below to find out more.";
+  const NO_ANSWER = "I don't know that yet. The README has the full details.";
+
+  const form = document.querySelector('#ask-form');
+  const input = document.querySelector('#question');
+  const mic = document.querySelector('#mic');
+  const answerBox = document.querySelector('#answer');
+  const readme = document.querySelector('#readme');
+
+  // ---------- Speaking ----------
+
+  // Read text aloud, using a female voice when the computer has one.
+  const PREFERRED_VOICES = ['Microsoft Aria', 'Microsoft Zira', 'Google UK English Female', 'Samantha'];
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    const voices = speechSynthesis.getVoices();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voices.find(v => PREFERRED_VOICES.some(name => v.name.includes(name))) || null;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+  }
+
+  document.querySelector('#listen').addEventListener('click', () => speak(INTRO));
+
+  // ---------- Finding the answer ----------
+
+  // Same rule as findAnswer in app/voice.js: the entry whose keywords match
+  // the most words in the question wins.
+  let answers = null;
+  async function answerInBrowser(question) {
+    answers = answers || await (await fetch('voice-answers.json')).json();
+    const words = new Set(question.toLowerCase().match(/[a-z0-9]+/g) || []);
+    let best = null;
+    let bestScore = 0;
+    for (const entry of answers) {
+      const score = entry.keywords.filter(k => words.has(k)).length;
+      if (score > bestScore) {
+        best = entry;
+        bestScore = score;
+      }
+    }
+    return best ? { matched: true, id: best.id, answer: best.answer } : { matched: false, answer: NO_ANSWER };
+  }
+
+  async function getAnswer(question) {
+    try {
+      const response = await fetch('/api/voice/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+      if (response.ok || response.status === 400) return await response.json();
+    } catch {
+      // No server (GitHub Pages): fall through to the browser.
+    }
+    return answerInBrowser(question);
+  }
+
+  async function ask(question) {
+    const data = await getAnswer(question.trim());
+    const text = data.answer || data.error;
+    answerBox.textContent = text;
+    answerBox.hidden = false;
+    readme.hidden = data.matched !== false;
+    speak(text);
+  }
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    ask(input.value);
+  });
+
+  // ---------- Listening (push to talk) ----------
+
+  // Chrome and Edge support speech to text; Firefox does not, so we show a note.
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) {
+    mic.hidden = true;
+    document.querySelector('#mic-note').hidden = false;
+  } else {
+    let recognition = null;
+    mic.addEventListener('click', () => {
+      // Second click: the user has finished talking.
+      if (recognition) {
+        recognition.stop();
+        return;
+      }
+      // Stop reading aloud, so the mic does not hear the speaker.
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+      let heard = '';
+      recognition = new Recognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;     // keep listening through short pauses
+      recognition.interimResults = true; // show the words while they are spoken
+      recognition.onresult = event => {
+        heard = Array.from(event.results).map(result => result[0].transcript).join(' ').trim();
+        input.value = heard;
+      };
+      // Ask only when listening ends (Stop clicked, or a long silence).
+      recognition.onend = () => {
+        recognition = null;
+        mic.textContent = '🎤 Speak';
+        if (heard) ask(heard);
+      };
+      recognition.start();
+      mic.textContent = '⏹ Stop';
+    });
+  }
+</script>
+</body>
+</html>

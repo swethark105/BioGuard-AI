@@ -52,6 +52,8 @@ jobs:
             if [ -f "artifacts/$f" ]; then cp "artifacts/$f" site/; fi
           done
           if [ -d artifacts/playwright-report ]; then cp -r artifacts/playwright-report site/; fi
+                    # The voice page also works without a server, so publish it too.
+          cp public/voice.html app/voice-answers.json site/
           # Trends: download the history published by earlier runs, add this
           # run to it, and publish it again with trends.html.
           site_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
