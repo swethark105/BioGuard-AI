@@ -2,6 +2,8 @@
 
 [![Quality Pipeline](https://github.com/swethark105/BioGuard-AI/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/swethark105/BioGuard-AI/actions/workflows/quality.yml) [![Latest results](https://img.shields.io/badge/results-daily%20dashboard-blue)](https://swethark105.github.io/BioGuard-AI/)
 
+🎧 **[Listen and ask about this project](https://swethark105.github.io/BioGuard-AI/voice.html)**: a one-minute spoken intro, plus voice Q&A (voice input works best in Chrome or Edge)
+
 **Synthetic Biotech Sample QA Automation & AI-Assisted Testing**
 
 BioGuard AI is an independent QA engineering portfolio project demonstrating how to build an automated testing framework from scratch for a fictional biotech sample application.
@@ -31,9 +33,9 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 | Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 54 |
-| Test runs (all browsers) | 82 |
-| Passed | 54 |
+| Total Tests | 57 |
+| Test runs (all browsers) | 91 |
+| Passed | 57 |
 | Failed | 0 |
 | Requirements Covered | 12/12 |
 
@@ -52,7 +54,7 @@ Results reflect the GitHub Actions run on November 23, 2026. The [daily dashboar
 | Data file checks (API) | DATA-001 to DATA-010, DATA-013 | Correct scores, the 0.80 boundary and rounding, 8 kinds of bad file rejected, nothing saved on error, audit log |
 | Data file checks (UI) | DATA-011, DATA-012 | Upload page shows results and readable errors (Chromium, Firefox, WebKit) |
 | Voice Q&A (API) | VOICE-001 to VOICE-004 | Right answer for each question, honest "I don't know" for unknown ones, bad input rejected, every answer reachable |
-| Voice Q&A (UI) | VOICE-005 to VOICE-008 | Typed questions, answer read aloud (speech mocked), README link, mic shown only where supported (Chromium, Firefox, WebKit) |
+| Voice Q&A (UI) | VOICE-005 to VOICE-011 | Typed questions, answer read aloud (speech mocked), README link, mic shown only where supported (Chromium, Firefox, WebKit), pauses while speaking, the spoken intro, works without a server |
 
 ## Quick Start — Run with One Command
 
