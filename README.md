@@ -16,6 +16,8 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 - **Cross-Browser Testing:** User-facing pages tested in Chromium, Firefox and WebKit (Safari).
 - **Login Lockout with Email Code:** The 6th failed login emails a verification code; tests read it from a fake inbox (Mailpit).
 - **PDF Report Comparison:** The downloadable QC report is compared with an approved version on every run.
+- **Data File Checks:** Upload an instrument CSV file; bad files (missing values, wrong header, duplicate IDs) are rejected with a clear error.
+- **Voice Q&A:** Ask about the project by voice or by typing; answers come only from checked answers, with no AI cost.
 - **Requirements Traceability:** Risk-based test coverage mapped to synthetic requirements.
 - **AI-Assisted Testing:** Optional local AI-generated test scenario proposals.
 - **Human-in-the-Loop Review:** Approve, request revisions, or reject AI proposals.
@@ -29,13 +31,13 @@ All sample data is fictional. The project is not a diagnostic tool or a validate
 
 | Metric | Latest Verified Run |
 |---|---|
-| Total Tests | 33 |
-| Test runs (all browsers) | 49 |
-| Passed | 22 |
+| Total Tests | 54 |
+| Test runs (all browsers) | 82 |
+| Passed | 54 |
 | Failed | 0 |
-| Requirements Covered | 10/10 |
+| Requirements Covered | 12/12 |
 
-Results reflect the GitHub Actions run on November 19, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
+Results reflect the GitHub Actions run on November 23, 2026. The [daily dashboard](https://swethark105.github.io/BioGuard-AI/) always shows the latest run.
 
 | Test group | Tests | What they check |
 |---|---|---|
@@ -47,6 +49,10 @@ Results reflect the GitHub Actions run on November 19, 2026. The [daily dashboar
 | PDF report | PDF-001 to PDF-004 | Downloaded QC report matches the approved text, the API data and the approved page image |
 | Login lockout (API) | AUTH-001, AUTH-002, AUTH-004 to AUTH-010 | Lockout on the 6th failure, emailed code, wrong / expired / reused codes, counter reset, no account enumeration |
 | Login lockout (UI) | AUTH-003 | Full journey: 6 failures, code read from the email, account unlocked (Chromium, Firefox, WebKit) |
+| Data file checks (API) | DATA-001 to DATA-010, DATA-013 | Correct scores, the 0.80 boundary and rounding, 8 kinds of bad file rejected, nothing saved on error, audit log |
+| Data file checks (UI) | DATA-011, DATA-012 | Upload page shows results and readable errors (Chromium, Firefox, WebKit) |
+| Voice Q&A (API) | VOICE-001 to VOICE-004 | Right answer for each question, honest "I don't know" for unknown ones, bad input rejected, every answer reachable |
+| Voice Q&A (UI) | VOICE-005 to VOICE-008 | Typed questions, answer read aloud (speech mocked), README link, mic shown only where supported (Chromium, Firefox, WebKit) |
 
 ## Quick Start — Run with One Command
 
@@ -334,6 +340,20 @@ The same Jenkinsfile works as a **Multibranch Pipeline** (each branch is built w
 
 To see the defect-detection demo in Jenkins, choose **Build with Parameters** and tick `INJECT_DEMO_DEFECT`. The build fails, and the test results show `API-002` catching the defect.
 
+## Data File Checks
+
+Open `http://localhost:3000/upload` and upload a CSV file with the header `sample_id,signal_1,signal_2,signal_3`. Each sample's score is the average of its three signals, rounded to 2 decimal places; 0.80 or more is PASS, otherwise REVIEW.
+
+A bad file is rejected as a whole with a clear message (for example `Line 2: signal_2 is missing.`) and nothing is saved. Accepted uploads are recorded in the audit log. The test files, good and bad, are in `tests/data/`.
+
+## Voice Q&A
+
+Open `http://localhost:3000/voice` (Chrome or Edge for voice input) and ask a question such as *"Which browsers do you test?"* by typing or with the 🎤 button. The answer is shown and read aloud.
+
+- **No AI and no cost:** speech uses the browser's built-in Web Speech API, and answers come only from the checked list in `app/voice-answers.json`, so nothing is made up.
+- **Honest when unsure:** an unknown question gets *"I don't know that yet"* with a link to this README, and is logged at `/api/voice/unanswered` to show which answers to add next.
+- **Tested without a microphone:** the tests type the question and replace the browser's speaker with a recorder, so they can check exactly what would be said aloud.
+
 ## Defect Detection Demonstration
 
 The project includes an optional defect-injection feature that deliberately introduces a validation error.
@@ -373,6 +393,8 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 | `tests/helpers/mailbox.ts` | Reads verification emails from Mailpit (fake inbox) |
 | `tests/pdf-report.spec.ts` | PDF report tests; the approved report text and page image are in `tests/__snapshots__/` |
 | `tests/helpers/pdf.ts` | Reads a PDF's text and draws its pages as images for comparison (pdf.js) |
+| `app/data-upload.js`, `tests/data-upload-api.spec.ts`, `tests/data-upload-ui.spec.ts`, `tests/data/` | Data file checks: CSV upload, validation and its test files |
+| `app/voice.js`, `app/voice-answers.json`, `tests/voice-api.spec.ts`, `tests/voice-ui.spec.ts` | Voice Q&A page, its checked answers, and its tests |
 | `tests/global-setup.ts` | Resets saved review decisions before each test run |
 | `pages/` | Page objects (where things are on each page) |
 | `fixtures/test-options.ts` | Custom Playwright fixtures that hand page objects to tests |
@@ -396,7 +418,7 @@ To see the AI suggest a cause for the failure, run `npm run explain` afterwards 
 
 ## Technology Stack
 
-**Playwright (Chromium, Firefox, WebKit) | TypeScript | JavaScript | Node.js | pdf-lib and pdf.js | Mailpit | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
+**Playwright (Chromium, Firefox, WebKit) | TypeScript | JavaScript | Node.js | pdf-lib and pdf.js | Mailpit | Web Speech API | Docker | GitHub Actions | Jenkins | GitHub Copilot (Playwright agents) | Ollama (Optional)**
 
 ## Project Objective
 
