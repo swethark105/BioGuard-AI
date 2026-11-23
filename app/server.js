@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import { buildQcReport } from './qc-report.js';
 import { handleAuth } from './auth.js';
 import { handleUpload } from './data-upload.js';
+import { handleVoice } from './voice.js';
 const samples=JSON.parse(fs.readFileSync(new URL('../data/samples.json',import.meta.url)));
 const audit=[];
 const send=(res,status,obj)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(obj));};
@@ -19,6 +20,7 @@ const server=http.createServer(async(req,res)=>{
  if(await handleAuth(req,res,path))return;
   // Instrument data upload (see app/data-upload.js).
  if(await handleUpload(req,res,path,{audit,classify:quality}))return;
+  if(await handleVoice(req,res,path))return;
 if(req.method==='GET'&&path==='/ai-review'){
   const dashboard=fs.readFileSync(new URL('./review-dashboard.html',import.meta.url),'utf8');
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});

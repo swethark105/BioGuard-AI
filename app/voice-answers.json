@@ -1,0 +1,72 @@
+[
+  {
+    "id": "what",
+    "keywords": ["overview", "project", "about", "bioguard", "explain"],
+    "answer": "BioGuard AI is a QA automation portfolio project. It tests a fictional lab app that scores samples as PASS or REVIEW. All data is made up."
+  },
+  {
+    "id": "tools",
+    "keywords": ["tools", "stack", "technology", "language", "playwright", "typescript"],
+    "answer": "The tests use Playwright with TypeScript. It also uses Docker, GitHub Actions, Jenkins and an optional local AI called Ollama."
+  },
+  {
+    "id": "pass-review",
+    "keywords": ["pass", "review", "threshold", "score", "quality"],
+    "answer": "A sample with signal quality of 0.80 or more is PASS. Anything lower is REVIEW, so a person checks it."
+  },
+  {
+    "id": "browsers",
+    "keywords": ["browser", "browsers", "chrome", "firefox", "safari", "webkit", "cross"],
+    "answer": "The user pages are tested in three browser engines: Chromium for Chrome and Edge, Firefox, and WebKit for Safari."
+  },
+  {
+    "id": "api",
+    "keywords": ["api", "endpoint", "validation", "backend"],
+    "answer": "The API tests check the sample data, reject bad input with an error, and make sure every change is written to an audit log."
+  },
+  {
+    "id": "login",
+    "keywords": ["login", "lockout", "locked", "password", "code", "email", "mailpit"],
+    "answer": "After six wrong passwords the account locks and a six digit code is emailed. The tests read that code from a fake inbox called Mailpit."
+  },
+  {
+    "id": "pdf",
+    "keywords": ["pdf", "report", "download", "compare"],
+    "answer": "The QC report PDF is downloaded and compared with an approved copy: the text, the numbers from the API, and a picture of the page."
+  },
+  {
+    "id": "upload",
+    "keywords": ["upload", "csv", "file", "data"],
+    "answer": "You can upload a CSV file of samples. The tests check good files, and bad files like missing values, wrong headers and duplicate IDs."
+  },
+  {
+    "id": "traceability",
+    "keywords": ["requirement", "requirements", "traceability", "risk", "coverage"],
+    "answer": "Every test is linked to a requirement with a risk level. The dashboard shows which requirements passed."
+  },
+  {
+    "id": "ci",
+    "keywords": ["ci", "pipeline", "github", "actions", "jenkins", "daily", "schedule"],
+    "answer": "GitHub Actions runs all tests every day and publishes a dashboard to GitHub Pages. Jenkins can run the same pipeline too."
+  },
+  {
+    "id": "docker",
+    "keywords": ["docker", "container", "run", "start", "install"],
+    "answer": "With Docker Desktop running, one command starts the app, the fake inbox and the tests. You do not need to install Node or Playwright."
+  },
+  {
+    "id": "ai",
+    "keywords": ["ai", "ollama", "model", "llm", "artificial"],
+    "answer": "A local AI suggests new test ideas and explains failed tests. A person must approve every suggestion, and AI never decides if a test passes."
+  },
+  {
+    "id": "defects",
+    "keywords": ["defect", "bug", "bugs", "catch", "planted", "found"],
+    "answer": "The project has switches that plant bugs on purpose, to prove the tests catch them. The tests also found a real cookie bug in Safari."
+  },
+  {
+    "id": "who",
+    "keywords": ["who", "author", "built", "made", "swetha"],
+    "answer": "It was built by Swetha, a senior QA automation engineer, as a portfolio project."
+  }
+]
