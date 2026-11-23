@@ -4,7 +4,7 @@ const requirements = JSON.parse(fs.readFileSync('requirements/requirements.json'
 const report = JSON.parse(fs.readFileSync('artifacts/results.json', 'utf8'));
 
 const BROWSERS = ['chromium', 'firefox', 'webkit'];
-const ID_PATTERN = /^(API|UI|AI|AGT|SEED|PDF|AUTH)-\d+/;
+const ID_PATTERN = /^(API|UI|AI|AGT|SEED|PDF|AUTH|DATA)-\d+/;
 
 // One entry per test run. A test that runs in three browsers gives three runs.
 const runs = [];
