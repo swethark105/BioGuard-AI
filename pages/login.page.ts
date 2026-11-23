@@ -1,5 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
-
+import { UploadPage } from '../pages/upload.page';
 /** The login page: where things are, and what a user can do there. */
 export class LoginPage {
   readonly email: Locator;

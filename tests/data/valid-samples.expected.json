@@ -1,0 +1,7 @@
+[
+  { "sampleId": "RUN-001", "score": 0.91, "status": "PASS" },
+  { "sampleId": "RUN-002", "score": 0.72, "status": "REVIEW" },
+  { "sampleId": "RUN-003", "score": 0.85, "status": "PASS" },
+  { "sampleId": "RUN-004", "score": 0.78, "status": "REVIEW" },
+  { "sampleId": "RUN-005", "score": 0.99, "status": "PASS" }
+]

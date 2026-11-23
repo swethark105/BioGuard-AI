@@ -1,0 +1,4 @@
+sample_id,signal_1,signal_2,signal_3
+EDGE-080,0.80,0.80,0.80
+EDGE-079,0.79,0.79,0.79
+EDGE-ROUND,0.80,0.80,0.79

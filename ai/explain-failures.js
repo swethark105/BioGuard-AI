@@ -44,7 +44,7 @@ function collectFailures(report) {
       for (const t of spec.tests || []) {
         const r = t.results?.at(-1);
         if (!r || r.status === 'passed' || r.status === 'skipped') continue;
-        const testId = (spec.title.match(/^(API|UI|AI|AGT|SEED|PDF|AUTH)-\d+/) || [])[0] || spec.title;
+        const testId = (spec.title.match(/^(API|UI|AI|AGT|SEED|PDF|AUTH|DATA)-\d+/) || [])[0] || spec.title;
         // The same test can fail in several browsers: explain it once, noting where it failed.
         const seen = failures.find(f => f.testId === testId);
         if (seen) {
