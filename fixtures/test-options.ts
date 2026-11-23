@@ -2,6 +2,7 @@ import { test as base, expect } from '@playwright/test';
 import { SamplesPage } from '../pages/samples.page';
 import { LoginPage } from '../pages/login.page';
 import { UploadPage } from '../pages/upload.page'; // NEW (a)
+import { VoicePage } from '../pages/voice.page';
 import { Mailbox } from '../tests/helpers/mailbox';
 
 export type TestUser = { email: string; password: string };
@@ -10,6 +11,7 @@ type Fixtures = {
   samplesPage: SamplesPage;
   loginPage: LoginPage;
   uploadPage: UploadPage; // NEW (b)
+  voicePage: VoicePage;
   mailbox: Mailbox;
   testUser: TestUser;
 };
@@ -31,7 +33,9 @@ export const test = base.extend<Fixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },
-
+  voicePage: async ({ page }, use) => {
+    await use(new VoicePage(page));
+  },
   // NEW (c): hands tests a ready-made UploadPage
   uploadPage: async ({ page }, use) => {
     await use(new UploadPage(page));
