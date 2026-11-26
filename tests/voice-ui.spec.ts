@@ -40,7 +40,8 @@ test('VOICE-006 the answer is read aloud', async ({ voicePage, page }) => {
   await voicePage.ask('How does the login lockout work?');
 
   await expect(voicePage.answer).toContainText('six digit code');
-  await expect.poll(() => page.evaluate(() => (window as any).spoken)).toEqual([await voicePage.answer.textContent()]);
+  // Speech is sent one sentence at a time, so join the sentences back together.
+  await expect.poll(() => page.evaluate(() => (window as any).spoken.join(' '))).toBe(await voicePage.answer.textContent());
 });
 
 test('VOICE-007 an unknown question points to the README', async ({ voicePage }) => {
@@ -103,15 +104,26 @@ test('VOICE-009 a pause while speaking does not cut the question short', async (
   });
 });
 
-test('VOICE-010 Listen reads the project intro aloud', async ({ voicePage, page }) => {
+test('VOICE-010 Listen reads the intro one sentence at a time, and can be stopped', async ({ voicePage, page }) => {
   await voicePage.open();
 
-  await voicePage.listenButton.click();
+  await test.step('WHEN the user clicks Listen', async () => {
+    await voicePage.listenButton.click();
+  });
 
-  const spoken: string[] = await page.evaluate(() => (window as any).spoken);
-  expect(spoken).toHaveLength(1);
-  expect(spoken[0]).toContain('welcome to BioGuard AI');
-  expect(spoken[0]).toContain('a person always makes the final call');
+  await test.step('THEN the whole intro is read, in short sentences', async () => {
+    const spoken: string[] = await page.evaluate(() => (window as any).spoken);
+    expect(spoken.length).toBeGreaterThan(5);
+    expect(spoken[0]).toContain('welcome to BioGuard AI');
+    expect(spoken.join(' ')).toContain('a person always makes the final call');
+    // Chrome often stops one long piece of speech after about 15 seconds.
+    for (const sentence of spoken) expect(sentence.length, sentence).toBeLessThan(250);
+  });
+
+  await test.step('AND the button can stop it', async () => {
+    await page.getByRole('button', { name: 'Stop the intro' }).click();
+    await expect(voicePage.listenButton).toBeVisible();
+  });
 });
 
 test('VOICE-011 the page still answers with no server, as on GitHub Pages', async ({ voicePage, page }) => {

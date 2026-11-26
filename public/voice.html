@@ -43,14 +43,16 @@
   //   - on GitHub Pages, where there is no server, so it finds the answer itself
   //     in voice-answers.json, using the same rule as the server.
 
-  const INTRO = "Hi, and welcome to BioGuard AI, Swetha's QA automation portfolio project. " +
-    "It tests a fictional lab app that scores samples as PASS or REVIEW. " +
-    "The framework is built from scratch with Playwright and TypeScript: over fifty tests for the user interface and the API, run in Chrome, Firefox and Safari's engine. " +
-    "The tests cover real risks: a login that locks after six wrong passwords and emails a code, a PDF report compared with an approved version, uploaded data files checked for bad values, and this voice page. " +
-    "Every test is linked to a requirement with a risk level. GitHub Actions runs everything daily and publishes a dashboard, and Jenkins and Docker run it too. " +
-    "Bugs are planted on purpose to prove the tests catch them, and the tests found a real cookie bug in Safari. " +
-    "AI suggests tests and explains failures, but a person always makes the final call. " +
-    "Ask me a question below to find out more.";
+  const INTRO = "Hi, and welcome to BioGuard AI. " +
+    "Imagine a lab app that checks patient samples. " +
+    "If it makes a mistake, a bad sample could be marked as good. " +
+    "That is why testing matters. " +
+    "This project, by QA engineer Swetha, shows how to test an app like that. " +
+    "More than fifty automated tests check the app every day, in three web browsers, with no one pressing a button. " +
+    "To prove the tests really work, Swetha even adds bugs on purpose, and the tests catch them. " +
+    "AI helps along the way, but a person always makes the final call. " +
+    "The app and its data are made up, so it is safe to explore. " +
+    "Thanks for listening. Ask a question below to learn more.";
   const NO_ANSWER = "I don't know that yet. The README has the full details.";
 
   const form = document.querySelector('#ask-form');
@@ -58,21 +60,43 @@
   const mic = document.querySelector('#mic');
   const answerBox = document.querySelector('#answer');
   const readme = document.querySelector('#readme');
-
-  // ---------- Speaking ----------
+    // ---------- Speaking ----------
 
   // Read text aloud, using a female voice when the computer has one.
+  // Chrome often stops long speech after about 15 seconds, so we say one
+  // sentence at a time. onDone runs after the last sentence.
   const PREFERRED_VOICES = ['Microsoft Aria', 'Microsoft Zira', 'Google UK English Female', 'Samantha'];
-  function speak(text) {
+  function speak(text, onDone) {
     if (!('speechSynthesis' in window)) return;
-    const voices = speechSynthesis.getVoices();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = voices.find(v => PREFERRED_VOICES.some(name => v.name.includes(name))) || null;
     speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
+    setIntroPlaying(false);
+    const voices = speechSynthesis.getVoices();
+    const voice = voices.find(v => PREFERRED_VOICES.some(name => v.name.includes(name))) || null;
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    sentences.forEach((sentence, i) => {
+      const utterance = new SpeechSynthesisUtterance(sentence.trim());
+      utterance.voice = voice;
+      if (onDone && i === sentences.length - 1) utterance.onend = onDone;
+      speechSynthesis.speak(utterance);
+    });
   }
 
-  document.querySelector('#listen').addEventListener('click', () => speak(INTRO));
+  // The Listen button also stops the intro if it is playing.
+  const listen = document.querySelector('#listen');
+  let introPlaying = false;
+  function setIntroPlaying(playing) {
+    introPlaying = playing;
+    listen.textContent = playing ? '⏹ Stop the intro' : '▶ Listen to the intro';
+  }
+  listen.addEventListener('click', () => {
+    if (introPlaying) {
+      speechSynthesis.cancel();
+      setIntroPlaying(false);
+      return;
+    }
+    speak(INTRO, () => setIntroPlaying(false));
+    setIntroPlaying(true);
+  });
 
   // ---------- Finding the answer ----------
 
